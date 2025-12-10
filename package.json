@@ -1,0 +1,29 @@
+{
+  "name": "simple-screenshare",
+  "version": "1.0.0",
+  "description": "Simple screenshare",
+  "homepage": "https://github.com/kiralysanyi/simple-screenshare#readme",
+  "bugs": {
+    "url": "https://github.com/kiralysanyi/simple-screenshare/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kiralysanyi/simple-screenshare.git"
+  },
+  "license": "ISC",
+  "author": "Király Sándor",
+  "type": "commonjs",
+  "main": "src/backend/index.js",
+  "scripts": {
+    "dev": "nodemon .",
+    "start": "node ."
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "peer": "^1.0.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
+}
