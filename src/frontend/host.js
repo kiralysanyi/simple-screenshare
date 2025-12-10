@@ -37,8 +37,6 @@ async function captureScreen() {
             audio: false
         });
 
-        // do whatever you want with `stream`
-        // for example show it in a video element:
         return stream;
     } catch (err) {
         console.error("User hates permissions or something failed:", err);

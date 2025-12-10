@@ -23,7 +23,6 @@ const peerServer = ExpressPeerServer(server, {
 */
 
 const rooms = {}
-const peerIDs = {}
 
 io.on("connection", (socket) => {
     socket.on("joinroom", (roomid, peerid, isHost) => {
@@ -31,24 +30,40 @@ io.on("connection", (socket) => {
         socket.roomID = roomid;
 
         if (!rooms[roomid]) {
-            rooms[roomid] = {}
+            rooms[roomid] = {
+                roomname: roomid,
+                hostpeer: undefined,
+                peers: []
+            }
         }
 
-        if (isHost && rooms[roomid]["hostpeer"] == undefined) {
+
+        if (isHost == true && rooms[roomid]["hostpeer"] == undefined) {
+            socket.isHost = true;
             rooms[roomid]["hostpeer"] = peerid;
             socket.on("disconnect", () => {
                 rooms[roomid]["hostpeer"] = undefined;
             })
 
-            socket.emit("peers", peerIDs[roomid]);
+            socket.emit("peers", rooms[roomid]["peers"]);
+        } else {
+            socket.isHost = false;
         }
 
-        if (!peerIDs[roomid]) {
-            peerIDs[roomid] = [];
+
+
+        if (isHost != true) {
+            rooms[roomid]["peers"].push(peerid)
+            io.to(roomid).emit("newPeer", peerid)
         }
 
-        peerIDs[roomid].push(peerid)
-        io.to(roomid).emit("newPeer", peerid)
+        if (socket.isHost) {
+            socket.on("setname", (name) => {
+                rooms[roomid]["roomname"] = name;
+                io.to(roomid).emit("namechange", name)
+            })
+        }
+
         socket.join(roomid);
     })
 })
