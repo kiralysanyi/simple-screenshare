@@ -23,6 +23,6 @@ services:
       - 9000:9000
     environment:
       - HOST_PASS_ENABLE=1
-      - HOST_PASS="valamijelszo"
+      - HOST_PASS=valamijelszo
 
 ```
