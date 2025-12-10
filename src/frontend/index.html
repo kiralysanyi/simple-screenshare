@@ -40,7 +40,6 @@
             top: 0px;
             right: 0px;
         }
-
     </style>
 </head>
 
@@ -55,34 +54,39 @@
         location.href = `${location.protocol + "//"}${location.host}/webui/host.html`
     })
 
-    fetch("/api/rooms", {
-        method: "GET", headers: {
-            "Content-Type": "application/json"
-        }
-    }).then(async (response) => {
-        const rooms = (await response.json())["data"];
-        console.log(rooms)
-        for (let i in rooms) {
-            let room = rooms[i];
-            console.log(room)
-            const roomObj = document.createElement("div");
-            roomObj.classList.add("room")
-            roomObj.innerHTML = `
+    // refresh every 2 seconds
+    setInterval(() => {
+        fetch("/api/rooms", {
+            method: "GET", headers: {
+                "Content-Type": "application/json"
+            }
+        }).then(async (response) => {
+            const rooms = (await response.json())["data"];
+            console.log(rooms)
+            document.getElementById("roomlist").innerHTML = ""
+            for (let i in rooms) {
+                let room = rooms[i];
+                console.log(room)
+                const roomObj = document.createElement("div");
+                roomObj.classList.add("room")
+                roomObj.innerHTML = `
                 <h1>${room.roomname}</h1>
                 <h2>Viewers: ${room.viewers}</h2>
             `
 
-            roomObj.addEventListener("click", () => {
-                location.href = `${location.protocol + "//"}${location.host}/webui/view.html${room.id}`
-            })
+                roomObj.addEventListener("click", () => {
+                    location.href = `${location.protocol + "//"}${location.host}/webui/view.html${room.id}`
+                })
 
-            document.getElementById("roomlist").appendChild(roomObj)
-        }
+                document.getElementById("roomlist").appendChild(roomObj)
+            }
 
-    }).catch((err) => {
-        console.error(err);
-        window.alert("Hiba a mátrixban -_-")
-    })
+        }).catch((err) => {
+            console.error(err);
+            window.alert("Hiba a mátrixban -_-")
+        })
+    }, 2000);
+
 </script>
 
 </html>
