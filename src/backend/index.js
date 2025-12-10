@@ -1,6 +1,7 @@
 const express = require("express");
 const { ExpressPeerServer } = require("peer");
 const { Server } = require("socket.io");
+require('dotenv').config();
 
 const app = express();
 
