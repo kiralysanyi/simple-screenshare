@@ -13,6 +13,17 @@ if (location.hash === "") {
     location.hash = createRandomString(10);
 }
 
+const statusDisplay = document.getElementById("statusDisplay");
+
+function hideStatus() {
+    statusDisplay.style.display = "none";
+}
+
+function updateStatus(status) {
+    statusDisplay.innerHTML = status;
+    statusDisplay.style.display = "block";
+}
+
 const roomID = location.hash;
 
 const invite_link = `${location.protocol + "//"}${location.host}/webui/view.html${roomID}`
@@ -27,6 +38,8 @@ document.getElementById("invite_link").addEventListener("click", () => {
 })
 
 // start peerjs
+
+updateStatus("Initializing...")
 
 var peer = new Peer({
     host: "/",
@@ -54,10 +67,16 @@ function updateViewerList(peers) {
 
 const socket = io();
 
+socket.on("disconnect", () => {
+    updateStatus("Disconnected from server");
+})
+
 socket.on("connect", () => {
     if (peer.disconnected) {
         peer.reconnect();
     }
+
+    hideStatus();
 })
 
 let stream = undefined
@@ -104,7 +123,9 @@ socket.once("hosterror", () => {
 })
 
 peer.on("open", () => {
+    updateStatus("Getting video input")
     getStream().then((stream) => {
+        updateStatus("Broadcasting")
         document.getElementById("display").srcObject = stream;
         socket.once("peers", (peerList) => {
             peers = peerList;
@@ -116,6 +137,10 @@ peer.on("open", () => {
         })
 
         socket.emit("joinroom", roomID, peer.id, true)
+
+        setTimeout(() => {
+            hideStatus();
+        }, 1000);
 
 
         document.getElementById("changename").addEventListener("click", () => {
