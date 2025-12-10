@@ -25,45 +25,48 @@ var peer = new Peer({
 
 const statusDisplay = document.getElementById("statusDisplay");
 statusDisplay.innerHTML = "Waiting for stream";
+const socket = io();
 
-peer.on("open", () => {
-    const socket = io();
+socket.on("connect", () => {
+    statusDisplay.style.display = "none";
+    if (peer.disconnected) {
+        peer.reconnect();
+    }
+})
 
-    socket.on("hostleft", () => {
-        statusDisplay.style.display = "block";
-        statusDisplay.innerHTML = "Waiting for stream"
-    })
 
-    socket.on("disconnect", () => {
-        statusDisplay.style.display = "block";
-        statusDisplay.innerHTML = "Disconnected from server"
-    })
+socket.on("hostleft", () => {
+    statusDisplay.style.display = "block";
+    statusDisplay.innerHTML = "Waiting for stream"
+})
 
-    socket.on("connect", () => {
-        statusDisplay.style.display = "block";
-        statusDisplay.innerHTML = "Waiting for stream";
-        peer.on("call", (call) => {
-            console.log("Incoming call")
-            call.on("stream", (stream) => {
-                statusDisplay.style.display = "none";
-                console.log("Incoming stream")
-                document.getElementById("display").srcObject = stream;
-                call.on("close", () => {
-                    statusDisplay.style.display = "block";
-                    statusDisplay.innerHTML = "Waiting for stream"
-                })
+socket.on("disconnect", () => {
+    statusDisplay.style.display = "block";
+    statusDisplay.innerHTML = "Disconnected from server"
+})
 
-                call.on("error", () => {
-                    statusDisplay.style.display = "block";
-                    statusDisplay.innerHTML = "Stream error -_-"
-                })
-            })
-
-            const stream = new MediaStream();
-            call.answer(stream);
+peer.on("call", (call) => {
+    console.log("Incoming call")
+    call.on("stream", (stream) => {
+        statusDisplay.style.display = "none";
+        console.log("Incoming stream")
+        document.getElementById("display").srcObject = stream;
+        call.on("close", () => {
+            statusDisplay.style.display = "block";
+            statusDisplay.innerHTML = "Waiting for stream"
         })
 
-        socket.emit("joinroom", roomID, peer.id, false)
+        call.on("error", () => {
+            statusDisplay.style.display = "block";
+            statusDisplay.innerHTML = "Stream error -_-"
+        })
     })
+
+    const stream = new MediaStream();
+    call.answer(stream);
+})
+
+peer.on("open", () => {
+    socket.emit("joinroom", roomID, peer.id, false)
 })
 

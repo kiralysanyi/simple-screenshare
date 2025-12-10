@@ -13,6 +13,17 @@ if (location.hash === "") {
     location.hash = createRandomString(10);
 }
 
+const statusDisplay = document.getElementById("statusDisplay");
+
+function hideStatus() {
+    statusDisplay.style.display = "none";
+}
+
+function updateStatus(status) {
+    statusDisplay.innerHTML = status;
+    statusDisplay.style.display = "block";
+}
+
 const roomID = location.hash;
 
 const invite_link = `${location.protocol + "//"}${location.host}/webui/view.html${roomID}`
@@ -27,6 +38,8 @@ document.getElementById("invite_link").addEventListener("click", () => {
 })
 
 // start peerjs
+
+updateStatus("Initializing...")
 
 var peer = new Peer({
     host: "/",
@@ -52,46 +65,83 @@ function updateViewerList(peers) {
     document.getElementById("viewcount").innerHTML = peers.length;
 }
 
-peer.on("open", () => {
-    captureScreen().then((stream) => {
-        document.getElementById("display").srcObject = stream;
-        const sendStream = (peerid) => {
-            console.log("Calling peer: ", peerid)
-            let call = peer.call(peerid, stream)
+const socket = io();
+
+socket.on("disconnect", () => {
+    updateStatus("Disconnected from server");
+})
+
+socket.on("connect", () => {
+    if (peer.disconnected) {
+        peer.reconnect();
+    }
+
+    hideStatus();
+})
+
+let stream = undefined
+
+async function getStream() {
+    try {
+        if (stream == undefined) {
+            stream = await captureScreen();
+            return stream;
+        } else {
+            return stream;
         }
+    } catch (error) {
+        throw error;
+    }
+}
 
-        const socket = io();
+let peers = [];
 
-        socket.on("connect", () => {
-            socket.once("peers", (peers) => {
-                for (let i in peers) {
-                    sendStream(peers[i]);
-                }
 
-                updateViewerList(peers);
+socket.on("removePeer", (peerToRemove) => {
+    peers = peers.filter(v => v !== peerToRemove)
+    updateViewerList(peers)
+})
 
-                socket.on("removePeer", (peerToRemove) => {
-                    peers = peers.filter(v => v !== peerToRemove)
-                    updateViewerList(peers)
-                })
+const sendStream = (peerid) => {
+    console.log("Calling peer: ", peerid)
+    let call = peer.call(peerid, stream)
+}
 
-                socket.on("newPeer", (peer) => {
-                    peers.push(peer);
-                    updateViewerList(peers);
-                    sendStream(peer);
-                })
-            })
+socket.on("newPeer", (peer) => {
+    peers.push(peer);
+    updateViewerList(peers);
+    sendStream(peer);
+})
 
-            socket.on("namechange", (name) => {
-                document.getElementById("roomname").innerText = name;
-            })
 
-            socket.once("hosterror", () => {
-                window.alert("There is someone already streaming in this room.")
-            })
+socket.on("namechange", (name) => {
+    document.getElementById("roomname").innerText = name;
+})
 
-            socket.emit("joinroom", roomID, peer.id, true)
+socket.once("hosterror", () => {
+    window.alert("There is someone already streaming in this room.")
+})
+
+peer.on("open", () => {
+    updateStatus("Getting video input")
+    getStream().then((stream) => {
+        updateStatus("Broadcasting")
+        document.getElementById("display").srcObject = stream;
+        socket.once("peers", (peerList) => {
+            peers = peerList;
+            for (let i in peers) {
+                sendStream(peers[i]);
+            }
+
+            updateViewerList(peers);
         })
+
+        socket.emit("joinroom", roomID, peer.id, true)
+
+        setTimeout(() => {
+            hideStatus();
+        }, 1000);
+
 
         document.getElementById("changename").addEventListener("click", () => {
             const newnameInput = document.getElementById("newname")
