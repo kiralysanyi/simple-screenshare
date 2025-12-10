@@ -76,7 +76,9 @@ io.on("connection", (socket) => {
 
 
         if (isHost != true) {
-            rooms[roomid]["peers"].push(peerid)
+            if (!rooms[roomid]["peers"].includes(peerid)) {
+                rooms[roomid]["peers"].push(peerid)
+            }
             io.to(roomid).emit("newPeer", peerid)
 
             socket.on("disconnect", () => {
