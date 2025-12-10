@@ -14,6 +14,7 @@ const io = new Server(server);
 
 const peerServer = ExpressPeerServer(server, {
     path: "/rtc",
+    proxied: true
 });
 
 /*
