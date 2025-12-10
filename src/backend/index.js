@@ -29,6 +29,9 @@ io.on("connection", (socket) => {
 
         //remove empty rooms
         const cleanUp = () => {
+            if (rooms[roomid] == undefined) {
+                return;
+            }
             console.log("Socket disconnected")
             console.log(rooms[roomid])
             if (rooms[roomid]["hostpeer"] == undefined && rooms[roomid]["peers"].length == 0) {
@@ -77,6 +80,9 @@ io.on("connection", (socket) => {
             io.to(roomid).emit("newPeer", peerid)
 
             socket.on("disconnect", () => {
+                if (!rooms[roomid]) {
+                    return;
+                }
                 if (rooms[roomid]["hostsocket"]) {
                     rooms[roomid]["hostsocket"].emit("removePeer", peerid);
                 }
