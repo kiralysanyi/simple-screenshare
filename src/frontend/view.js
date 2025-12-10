@@ -24,7 +24,21 @@ var peer = new Peer({
 });
 
 const statusDisplay = document.getElementById("statusDisplay");
-statusDisplay.innerHTML = "Waiting for stream";
+
+function hideStatus() {
+    statusDisplay.style.display = "none";
+    document.getElementById("display").style.display = "block";
+    document.body.style.backgroundImage = "none";
+}
+
+function updateStatus(status) {
+    statusDisplay.innerHTML = status;
+    statusDisplay.style.display = "block";
+    document.getElementById("display").style.display = "none";
+    document.body.style.backgroundImage = `url("background.jpg")`;
+}
+
+updateStatus("Waiting for stream")
 const socket = io();
 
 socket.on("connect", () => {
@@ -36,29 +50,26 @@ socket.on("connect", () => {
 
 
 socket.on("hostleft", () => {
-    statusDisplay.style.display = "block";
-    statusDisplay.innerHTML = "Waiting for stream"
+    updateStatus("Waiting for stream")
 })
 
 socket.on("disconnect", () => {
-    statusDisplay.style.display = "block";
-    statusDisplay.innerHTML = "Disconnected from server"
+    updateStatus("Disconnected from server")
 })
 
 peer.on("call", (call) => {
     console.log("Incoming call")
     call.on("stream", (stream) => {
-        statusDisplay.style.display = "none";
+        hideStatus();
         console.log("Incoming stream")
         document.getElementById("display").srcObject = stream;
+
         call.on("close", () => {
-            statusDisplay.style.display = "block";
-            statusDisplay.innerHTML = "Waiting for stream"
+            updateStatus("Waiting for stream")
         })
 
         call.on("error", () => {
-            statusDisplay.style.display = "block";
-            statusDisplay.innerHTML = "Stream error -_-"
+            updateStatus("Stream error -_-")
         })
     })
 
@@ -67,8 +78,7 @@ peer.on("call", (call) => {
 })
 
 peer.on("open", () => {
-    statusDisplay.style.display = "block";
-    statusDisplay.innerHTML = "Waiting for stream"
+    updateStatus("Waiting for stream");
     socket.emit("joinroom", roomID, peer.id, false)
 })
 

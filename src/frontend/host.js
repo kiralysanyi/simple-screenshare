@@ -127,6 +127,7 @@ peer.on("open", () => {
     getStream().then((stream) => {
         updateStatus("Broadcasting")
         document.getElementById("display").srcObject = stream;
+        document.getElementById("display").style.display = "block"
         socket.once("peers", (peerList) => {
             peers = peerList;
             for (let i in peers) {
