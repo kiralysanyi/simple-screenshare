@@ -29,13 +29,26 @@
             gap: 0.5rem;
             padding: 1rem;
             border-radius: 2rem;
+            width: 80%;
         }
 
         .room {
+            display: block;
+            position: relative;
             background-color: rgba(24, 24, 24, 0.753);
             border-radius: 2rem;
             padding: 1rem;
             cursor: pointer;
+        }
+
+        .room span {
+            display: block;
+            position: relative;
+            font-size: 4rem;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
 
         #newstream {
@@ -72,7 +85,7 @@
                 const roomObj = document.createElement("div");
                 roomObj.classList.add("room")
                 roomObj.innerHTML = `
-                <h1>${room.roomname}</h1>
+                <span>${room.roomname}</span>
                 <h2>Viewers: ${room.viewers}</h2>
             `
 
