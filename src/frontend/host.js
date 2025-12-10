@@ -86,6 +86,10 @@ peer.on("open", () => {
                 document.getElementById("roomname").innerText = name;
             })
 
+            socket.once("hosterror", () => {
+                window.alert("There is someone already streaming in this room.")
+            })
+
             socket.emit("joinroom", roomID, peer.id, true)
         })
 

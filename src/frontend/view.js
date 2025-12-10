@@ -23,15 +23,40 @@ var peer = new Peer({
     port: location.port
 });
 
+const statusDisplay = document.getElementById("statusDisplay");
+statusDisplay.innerHTML = "Waiting for stream";
+
 peer.on("open", () => {
     const socket = io();
 
+    socket.on("hostleft", () => {
+        statusDisplay.style.display = "block";
+        statusDisplay.innerHTML = "Waiting for stream"
+    })
+
+    socket.on("disconnect", () => {
+        statusDisplay.style.display = "block";
+        statusDisplay.innerHTML = "Disconnected from server"
+    })
+
     socket.on("connect", () => {
+        statusDisplay.style.display = "block";
+        statusDisplay.innerHTML = "Waiting for stream";
         peer.on("call", (call) => {
             console.log("Incoming call")
             call.on("stream", (stream) => {
+                statusDisplay.style.display = "none";
                 console.log("Incoming stream")
                 document.getElementById("display").srcObject = stream;
+                call.on("close", () => {
+                    statusDisplay.style.display = "block";
+                    statusDisplay.innerHTML = "Waiting for stream"
+                })
+
+                call.on("error", () => {
+                    statusDisplay.style.display = "block";
+                    statusDisplay.innerHTML = "Stream error -_-"
+                })
             })
 
             const stream = new MediaStream();

@@ -48,6 +48,11 @@ io.on("connection", (socket) => {
             }
         }
 
+        if (isHost == true && rooms[roomid]["hostpeer"] != undefined) {
+            socket.emit("hosterror");
+            console.log("Host conflict: someone already streaming in room: ", roomid)
+            return;
+        }
 
         if (isHost == true && rooms[roomid]["hostpeer"] == undefined) {
             socket.isHost = true;
@@ -56,6 +61,7 @@ io.on("connection", (socket) => {
             socket.on("disconnect", () => {
                 rooms[roomid]["hostpeer"] = undefined;
                 rooms[roomid]["hostsocket"] = undefined;
+                io.to(roomid).emit("hostleft")
                 cleanUp();
             })
 
@@ -74,7 +80,7 @@ io.on("connection", (socket) => {
                 if (rooms[roomid]["hostsocket"]) {
                     rooms[roomid]["hostsocket"].emit("removePeer", peerid);
                 }
-                
+
                 rooms[roomid]["peers"] = rooms[roomid]["peers"].filter(v => v !== peerid);
                 cleanUp();
             })
