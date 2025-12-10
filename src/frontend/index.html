@@ -54,8 +54,7 @@
         location.href = `${location.protocol + "//"}${location.host}/webui/host.html`
     })
 
-    // refresh every 2 seconds
-    setInterval(() => {
+    const update = () => {
         fetch("/api/rooms", {
             method: "GET", headers: {
                 "Content-Type": "application/json"
@@ -85,7 +84,11 @@
             console.error(err);
             window.alert("Hiba a mátrixban -_-")
         })
-    }, 2000);
+    }
+
+    // refresh every 2 seconds
+    setInterval(update, 2000);
+    update();
 
 </script>
 

@@ -67,6 +67,8 @@ peer.on("call", (call) => {
 })
 
 peer.on("open", () => {
+    statusDisplay.style.display = "block";
+    statusDisplay.innerHTML = "Waiting for stream"
     socket.emit("joinroom", roomID, peer.id, false)
 })
 
