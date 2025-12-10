@@ -15,6 +15,13 @@ if (location.hash === "") {
 
 const roomID = location.hash;
 
+const invite_link = `${location.protocol + "//"}${location.host}/view.html${roomID}`
+
+document.getElementById("invite_link").innerHTML = invite_link;
+document.getElementById("invite_link").addEventListener("click", () => {
+
+})
+
 // start peerjs
 
 var peer = new Peer({
@@ -40,6 +47,7 @@ async function captureScreen() {
 
 peer.on("open", () => {
     captureScreen().then((stream) => {
+        document.getElementById("display").srcObject = stream;
         const sendStream = (peerid) => {
             console.log("Calling peer: ", peerid)
             let call = peer.call(peerid, stream)
