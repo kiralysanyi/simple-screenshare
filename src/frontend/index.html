@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,17 +34,32 @@
             padding: 1rem;
             cursor: pointer;
         }
+
+        #newstream {
+            position: fixed;
+            top: 0px;
+            right: 0px;
+        }
+
     </style>
 </head>
+
 <body>
     <h1>Available rooms to join</h1>
     <h3>Click on room to join</h3>
+    <button id="newstream">New stream</button>
     <div id="roomlist"></div>
 </body>
 <script>
-    fetch("/api/rooms", {method: "GET", headers: {
-        "Content-Type": "application/json"
-    }}).then(async (response) => {
+    document.getElementById("newstream").addEventListener("click", () => {
+        location.href = `${location.protocol + "//"}${location.host}/webui/host.html`
+    })
+
+    fetch("/api/rooms", {
+        method: "GET", headers: {
+            "Content-Type": "application/json"
+        }
+    }).then(async (response) => {
         const rooms = (await response.json())["data"];
         console.log(rooms)
         for (let i in rooms) {
@@ -57,15 +73,16 @@
             `
 
             roomObj.addEventListener("click", () => {
-                location.href =`${location.protocol + "//"}${location.host}/webui/view.html${room.id}`
+                location.href = `${location.protocol + "//"}${location.host}/webui/view.html${room.id}`
             })
 
             document.getElementById("roomlist").appendChild(roomObj)
         }
-        
+
     }).catch((err) => {
         console.error(err);
         window.alert("Hiba a mátrixban -_-")
     })
 </script>
+
 </html>

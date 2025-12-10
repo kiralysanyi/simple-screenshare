@@ -26,6 +26,16 @@ const rooms = {}
 
 io.on("connection", (socket) => {
     socket.on("joinroom", (roomid, peerid, isHost) => {
+
+        //remove empty rooms
+        const cleanUp = () => {
+            console.log("Socket disconnected")
+            console.log(rooms[roomid])
+            if (rooms[roomid]["hostpeer"] == undefined && rooms[roomid]["peers"].length == 0) {
+                console.log("Removing empty room: ", roomid)
+                delete rooms[roomid];
+            }
+        }
         console.log(`Joining room: ${roomid} from peerid: ${peerid}`)
         socket.roomID = roomid;
 
@@ -46,6 +56,7 @@ io.on("connection", (socket) => {
             socket.on("disconnect", () => {
                 rooms[roomid]["hostpeer"] = undefined;
                 rooms[roomid]["hostsocket"] = undefined;
+                cleanUp();
             })
 
             socket.emit("peers", rooms[roomid]["peers"]);
@@ -60,8 +71,12 @@ io.on("connection", (socket) => {
             io.to(roomid).emit("newPeer", peerid)
 
             socket.on("disconnect", () => {
+                if (rooms[roomid]["hostsocket"]) {
+                    rooms[roomid]["hostsocket"].emit("removePeer", peerid);
+                }
+                
                 rooms[roomid]["peers"] = rooms[roomid]["peers"].filter(v => v !== peerid);
-                rooms[roomid]["hostsocket"].emit("removePeer", peerid)
+                cleanUp();
             })
         }
 
