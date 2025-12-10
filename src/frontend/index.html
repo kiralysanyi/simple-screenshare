@@ -4,8 +4,68 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Room list</title>
+    <style>
+        body {
+            background-color: rgb(32, 32, 32);
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        #roomlist {
+            position: fixed;
+            top: 15%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            background-color: rgba(255, 255, 255, 0.13);
+            overflow-y: auto;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-radius: 2rem;
+        }
+
+        .room {
+            background-color: rgba(0, 0, 0, 0.418);
+            border-radius: 2rem;
+            padding: 1rem;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    
+    <h1>Available rooms to join</h1>
+    <h3>Click on room to join</h3>
+    <div id="roomlist"></div>
 </body>
+<script>
+    fetch("/api/rooms", {method: "GET", headers: {
+        "Content-Type": "application/json"
+    }}).then(async (response) => {
+        const rooms = (await response.json())["data"];
+        console.log(rooms)
+        for (let i in rooms) {
+            let room = rooms[i];
+            console.log(room)
+            const roomObj = document.createElement("div");
+            roomObj.classList.add("room")
+            roomObj.innerHTML = `
+                <h1>${room.roomname}</h1>
+                <h2>Viewers: ${room.viewers}</h2>
+            `
+
+            roomObj.addEventListener("click", () => {
+                location.href =`${location.protocol + "//"}${location.host}/webui/view.html${room.id}`
+            })
+
+            document.getElementById("roomlist").appendChild(roomObj)
+        }
+        
+    }).catch((err) => {
+        console.error(err);
+        window.alert("Hiba a mátrixban -_-")
+    })
+</script>
 </html>

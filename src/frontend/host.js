@@ -15,11 +15,15 @@ if (location.hash === "") {
 
 const roomID = location.hash;
 
-const invite_link = `${location.protocol + "//"}${location.host}/view.html${roomID}`
+const invite_link = `${location.protocol + "//"}${location.host}/webui/view.html${roomID}`
 
 document.getElementById("invite_link").innerHTML = invite_link;
 document.getElementById("invite_link").addEventListener("click", () => {
-
+    navigator.clipboard.writeText(invite_link);
+    document.getElementById("invite_link").style.backgroundColor = "green";
+    setTimeout(() => {
+        document.getElementById("invite_link").style.backgroundColor = "rgba(0, 0, 0, 0.6)";
+    }, 1000);
 })
 
 // start peerjs
@@ -43,6 +47,11 @@ async function captureScreen() {
     }
 }
 
+function updateViewerList(peers) {
+    console.log("Viewer list updated: ", peers);
+    document.getElementById("viewcount").innerHTML = peers.length;
+}
+
 peer.on("open", () => {
     captureScreen().then((stream) => {
         document.getElementById("display").srcObject = stream;
@@ -54,17 +63,36 @@ peer.on("open", () => {
         const socket = io();
 
         socket.on("connect", () => {
-            socket.on("peers", (peers) => {
+            socket.once("peers", (peers) => {
                 for (let i in peers) {
                     sendStream(peers[i]);
                 }
+
+                updateViewerList(peers);
+
+                socket.on("removePeer", (peerToRemove) => {
+                    peers = peers.filter(v => v !== peerToRemove)
+                    updateViewerList(peers)
+                })
+
+                socket.on("newPeer", (peer) => {
+                    peers.push(peer);
+                    updateViewerList(peers);
+                    sendStream(peer);
+                })
             })
 
-            socket.on("newPeer", (peer) => {
-                sendStream(peer);
+            socket.on("namechange", (name) => {
+                document.getElementById("roomname").innerText = name;
             })
 
             socket.emit("joinroom", roomID, peer.id, true)
+        })
+
+        document.getElementById("changename").addEventListener("click", () => {
+            const newnameInput = document.getElementById("newname")
+            socket.emit("setname", newnameInput.value);
+            newnameInput.value = "";
         })
     }).catch(() => {
         console.error("Ki van a faszom.")
