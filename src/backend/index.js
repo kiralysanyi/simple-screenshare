@@ -27,6 +27,20 @@ const peerServer = ExpressPeerServer(server, {
 const rooms = {}
 
 io.on("connection", (socket) => {
+    socket.authenticated = false;
+
+    if (process.env.HOST_PASS_ENABLE == 1) {
+        socket.on("auth", (pass) => {
+            if (pass == process.env.HOST_PASS) {
+                socket.authenticated = true;
+                socket.emit("require_auth", false);
+            }
+        })
+        socket.emit("require_auth", true)
+    } else {
+        socket.authenticated = true;
+        socket.emit("require_auth", false)
+    }
     socket.on("joinroom", (roomid, peerid, isHost) => {
 
         //remove empty rooms
@@ -60,6 +74,12 @@ io.on("connection", (socket) => {
         }
 
         if (isHost == true && rooms[roomid]["hostpeer"] == undefined) {
+            if (process.env.HOST_PASS_ENABLE == 1) {
+                if (socket.authenticated == false) {
+                    socket.emit("error", "Authentication required on this server.")
+                    return
+                }
+            }
             socket.isHost = true;
             rooms[roomid]["hostpeer"] = peerid;
             rooms[roomid]["hostsocket"] = socket;

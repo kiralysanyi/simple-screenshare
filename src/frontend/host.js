@@ -41,12 +41,6 @@ document.getElementById("invite_link").addEventListener("click", () => {
 
 updateStatus("Initializing...")
 
-var peer = new Peer({
-    host: "/",
-    path: "/peerjs/rtc",
-    port: location.port
-});
-
 async function captureScreen() {
     try {
         const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -67,6 +61,25 @@ function updateViewerList(peers) {
 
 const socket = io();
 
+let authPending = true;
+
+document.getElementById("authbtn").addEventListener("click", () => {
+    socket.emit("auth", document.getElementById("password").value)
+})
+
+socket.on("require_auth", (isAuthRequired) => {
+    console.log(isAuthRequired)
+    if (isAuthRequired) {
+        authPending = true;
+        document.getElementById("passwordModal").style.display = "block";
+        socket.emit("auth", document.getElementById("password").value)
+
+    } else {
+        document.getElementById("passwordModal").style.display = "none";
+        authPending = false;
+    }
+})
+
 socket.on("disconnect", () => {
     updateStatus("Disconnected from server");
 })
@@ -78,6 +91,17 @@ socket.on("connect", () => {
 
     hideStatus();
 })
+
+socket.on("error", (err) => {
+    console.error("Socket error: ", err)
+    updateStatus("Socket error: " + err)
+})
+
+var peer = new Peer({
+    host: "/",
+    path: "/peerjs/rtc",
+    port: location.port
+});
 
 let stream = undefined
 
@@ -124,34 +148,38 @@ socket.once("hosterror", () => {
 
 peer.on("open", () => {
     updateStatus("Getting video input")
-    getStream().then((stream) => {
-        updateStatus("Broadcasting")
-        document.getElementById("display").srcObject = stream;
-        document.getElementById("display").style.display = "block"
-        socket.once("peers", (peerList) => {
-            peers = peerList;
-            for (let i in peers) {
-                sendStream(peers[i]);
-            }
+    const authWaitInterval = setInterval(() => {
+        if (authPending == true) {
+            return
+        }
 
-            updateViewerList(peers);
-        })
-
-        socket.emit("joinroom", roomID, peer.id, true)
-
-        setTimeout(() => {
+        clearInterval(authWaitInterval);
+        getStream().then((stream) => {
             hideStatus();
-        }, 1000);
+            document.getElementById("display").srcObject = stream;
+            document.getElementById("display").style.display = "block"
+            socket.once("peers", (peerList) => {
+                peers = peerList;
+                for (let i in peers) {
+                    sendStream(peers[i]);
+                }
+
+                updateViewerList(peers);
+            })
+
+            socket.emit("joinroom", roomID, peer.id, true)
 
 
-        document.getElementById("changename").addEventListener("click", () => {
-            const newnameInput = document.getElementById("newname")
-            socket.emit("setname", newnameInput.value);
-            newnameInput.value = "";
+            document.getElementById("changename").addEventListener("click", () => {
+                const newnameInput = document.getElementById("newname")
+                socket.emit("setname", newnameInput.value);
+                newnameInput.value = "";
+            })
+        }).catch(() => {
+            console.error("Ki van a faszom.")
+            window.alert("Valami hiba van a mátrixban.")
         })
-    }).catch(() => {
-        console.error("Ki van a faszom.")
-        window.alert("Valami hiba van a mátrixban.")
-    })
+    }, 500)
+
 })
 

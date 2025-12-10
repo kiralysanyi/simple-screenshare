@@ -76,6 +76,11 @@
             padding: 0.5rem;
             border: none;
             color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: rgb(55, 108, 255);
         }
 
         #statusDisplay {
@@ -88,6 +93,26 @@
             font-size: 3rem;
             transform: translate(-50%, -50%);
             color: white;
+        }
+
+        #passwordModal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 1rem;
+            width: auto;
+            height: auto;
+            background-color: rgb(121, 34, 0);
+            color: white;
+            min-width: 20%;
+            min-height: 20%;
+            padding: 2rem;
+        }
+
+        #passwordModal input {
+            background-color: white;
+            color: black;
         }
     </style>
 </head>
@@ -106,6 +131,11 @@
         <h3>Current viewers: <span id="viewcount"></span></h3>
     </div>
     <div id="statusDisplay"></div>
+    <div id="passwordModal">
+        <h1>Authenticate with Host Pass</h1>
+        <input type="password" id="password" placeholder="Password for starting stream">
+        <button id="authbtn">Authenticate</button>
+    </div>
 
 </body>
 <script src="host.js"></script>
