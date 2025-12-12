@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === 'dev') {
   app.use(require('cors')({ origin: "*" }))
 }
 
-const server = app.listen(9000);
+const server = app.listen(process.env.HTTP_PORT? process.env.HTTP_PORT: 9000);
 
 const io = new Server(server, socketOptions);
 
@@ -40,6 +40,8 @@ const createWorkerAndRouter = async () => {
   // 1. Create a Worker
   worker = await mediasoup.createWorker({
     logLevel: 'warn', // Change to 'debug' for detailed logs
+    rtcMinPort: 40000,
+    rtcMaxPort: 40500
   });
 
   worker.on('died', () => {
@@ -332,6 +334,4 @@ createWorkerAndRouter().then(() => {
       data: data
     })
   })
-
-  console.log("http://127.0.0.1:9000")
 });
