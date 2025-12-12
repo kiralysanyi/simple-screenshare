@@ -68,7 +68,6 @@ const createWorkerAndRouter = async () => {
 
 async function createWebRtcTransport() {
   const transport = await router.createWebRtcTransport({
-    webRtcServer: webRtcServer,
     listenIps: [{ ip: "0.0.0.0", announcedIp: process.env.ANNOUNCED_IP }],
     enableUdp: true,
     enableTcp: true,
