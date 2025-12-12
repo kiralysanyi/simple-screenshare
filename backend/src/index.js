@@ -40,6 +40,8 @@ const createWorkerAndRouter = async () => {
   // 1. Create a Worker
   worker = await mediasoup.createWorker({
     logLevel: 'warn', // Change to 'debug' for detailed logs
+    rtcMinPort: 40000,
+    rtcMaxPort: 40500
   });
 
   worker.on('died', () => {
