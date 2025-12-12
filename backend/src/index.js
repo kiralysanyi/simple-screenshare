@@ -1,5 +1,7 @@
 const express = require("express");
 const { Server } = require("socket.io");
+const fs = require("fs")
+const path = require("path");
 require('dotenv').config();
 
 const app = express();
@@ -11,9 +13,6 @@ if (process.env.NODE_ENV === 'dev') {
   socketOptions = { cors: { origin: "*" } };
   app.use(require('cors')({ origin: "*" }))
 }
-
-app.get("/", (req, res) => res.redirect("/webui"));
-
 
 const server = app.listen(9000);
 
@@ -307,7 +306,16 @@ createWorkerAndRouter().then(() => {
     })
   })
 
-  app.use("/webui", express.static("src/frontend"))
+  if (fs.existsSync("public") && fs.existsSync("public/assets")) {
+    console.log("Detected public folder, hosting webapp")
+    app.use("/", (req, res, next) => {
+      if (req.url.includes("/assets/")) {
+        return next();
+      }
+      return res.sendFile(path.join(process.cwd(), "public", "index.html"))
+    })
+    app.use("/assets", express.static("public/assets"))
+  }
 
   app.get("/api/rooms", (req, res) => {
     const data = [];

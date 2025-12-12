@@ -12,7 +12,7 @@ import StreamViewer from "./StreamViewer";
 const Stream = () => {
 
     const [isConnected, setIsConnected] = useState(false)
-    const [password, setPassword] = useState("");
+    //const [password, setPassword] = useState("");
     const [showModal, setShowModal] = useState(false);
     const roomID = useParams()["id"];
     const [previewStream, setPreviewStream] = useState<MediaStream>()

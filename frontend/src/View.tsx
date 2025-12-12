@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import socket from "./Socket";
 import { Device } from "mediasoup-client";
 import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
@@ -10,14 +10,12 @@ const View = () => {
 
     const [stream, setStream] = useState<MediaStream>()
     const roomID = useParams()["id"];
-    const [isConnected, setIsConnected] = useState(socket.connected)
 
     useEffect(() => {
         let isFirstLaunch = true;
         let rtpCapabilities: RtpCapabilities;
 
         const onConnected = () => {
-            setIsConnected(true)
             if (isFirstLaunch == false) {
                 console.log("Re attaching", socket.connected)
                 socket.emit("joinroom", roomID, false)
@@ -25,7 +23,6 @@ const View = () => {
         }
 
         const onDisconnected = () => {
-            setIsConnected(false)
         }
 
         let device: Device;
