@@ -13,14 +13,16 @@
   "license": "ISC",
   "author": "Király Sándor",
   "type": "commonjs",
-  "main": "src/backend/index.js",
+  "main": "src/index.js",
   "scripts": {
     "dev": "nodemon .",
     "start": "node ."
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "mediasoup": "^3.19.13",
     "peer": "^1.0.2",
     "socket.io": "^4.8.1"
   },

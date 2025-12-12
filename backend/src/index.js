@@ -1,0 +1,318 @@
+const express = require("express");
+const { Server } = require("socket.io");
+require('dotenv').config();
+
+const app = express();
+
+let socketOptions = undefined;
+
+if (process.env.NODE_ENV === 'dev') {
+  console.log("Dev mode")
+  socketOptions = { cors: { origin: "*" } };
+  app.use(require('cors')({ origin: "*" }))
+}
+
+app.get("/", (req, res) => res.redirect("/webui"));
+
+
+const server = app.listen(9000);
+
+const io = new Server(server, socketOptions);
+
+//mediasoup start
+
+const mediasoup = require('mediasoup');
+
+// Global mediasoup state
+let worker;
+let router;
+
+// Stores active Producers (key: roomID, value: producer)
+const activeProducers = new Map();
+// Stores transports for a peer (key: roomid, value: { key: socketId, value: {sendTransport, recvTransport} })
+const peerTransports = new Map();
+
+// --- Initialization Function ---
+const createWorkerAndRouter = async () => {
+  // 1. Create a Worker
+  worker = await mediasoup.createWorker({
+    logLevel: 'warn', // Change to 'debug' for detailed logs
+  });
+
+  worker.on('died', () => {
+    console.error('mediasoup Worker died, exiting...');
+    process.exit(1);
+  });
+
+  // 2. Create a Router
+  const mediaCodecs = [
+    {
+      kind: 'video',
+      mimeType: 'video/VP8',
+      clockRate: 90000,
+      parameters: {
+        'x-google-start-bitrate': 1000
+      }
+    },
+  ];
+
+  router = await worker.createRouter({ mediaCodecs });
+
+  console.log('mediasoup Worker and Router initialized.');
+};
+
+async function createWebRtcTransport() {
+  const transport = await router.createWebRtcTransport({
+    listenIps: [{ ip: "0.0.0.0", announcedIp: process.env.ANNOUNCED_IP }],
+    enableUdp: true,
+    enableTcp: true,
+    preferUdp: true
+  });
+
+  return {
+    transport,
+    params: {
+      id: transport.id,
+      iceParameters: transport.iceParameters,
+      iceCandidates: transport.iceCandidates,
+      dtlsParameters: transport.dtlsParameters
+    }
+  };
+}
+
+// Start the server initialization
+createWorkerAndRouter().then(() => {
+  const rooms = {}
+
+  io.on("connection", (socket) => {
+    socket.authenticated = false;
+
+    if (process.env.HOST_PASS_ENABLE == 1) {
+      socket.on("auth", (pass) => {
+        if (pass == process.env.HOST_PASS) {
+          socket.authenticated = true;
+          socket.emit("require_auth", false);
+        }
+      })
+      socket.emit("require_auth", true)
+    } else {
+      socket.authenticated = true;
+      socket.emit("require_auth", false)
+    }
+    socket.on("joinroom", (roomid, isHost) => {
+      console.log("Joining room: ", roomid, isHost)
+      //remove empty rooms
+      const cleanUp = () => {
+        if (rooms[roomid] == undefined) {
+          return;
+        }
+        console.log("Socket disconnected")
+        console.log(rooms[roomid])
+        if (rooms[roomid]["hostsocket"] == undefined && rooms[roomid]["viewers"] == 0) {
+          console.log("Removing empty room: ", roomid)
+          delete rooms[roomid];
+        }
+      }
+      socket.roomID = roomid;
+
+      if (!rooms[roomid]) {
+        console.log("Creating room")
+        rooms[roomid] = {
+          roomname: roomid,
+          hostsocket: undefined,
+          limit: 20,
+          viewers: 0,
+          producer: undefined,
+          consumers: new Map()
+        }
+      }
+
+      if (rooms[roomid]["viewers"] > rooms[roomid]["limit"] && socket.isHost != true) {
+        console.log("Room full: ", roomid)
+        socket.emit("room_full");
+        return;
+      }
+
+      if (isHost == true && rooms[roomid]["hostsocket"] != undefined) {
+        socket.emit("hosterror");
+        console.log("Host conflict: someone already streaming in room: ", roomid)
+        return;
+      }
+
+      if (isHost == true && rooms[roomid]["hostsocket"] == undefined) {
+        if (process.env.HOST_PASS_ENABLE == 1) {
+          if (socket.authenticated == false) {
+            socket.emit("error", "Authentication required on this server.")
+            return
+          }
+        }
+        socket.isHost = true;
+        rooms[roomid]["hostsocket"] = socket;
+        socket.on("disconnect", () => {
+          rooms[roomid]["hostsocket"] = undefined;
+          io.to(roomid).emit("hostleft")
+          cleanUp();
+        })
+      } else {
+        socket.isHost = false;
+      }
+
+
+
+      if (isHost != true) {
+        // handle new viewer
+
+        socket.on("disconnect", () => {
+          if (!rooms[roomid]) {
+            return;
+          }
+
+          rooms[roomid]["viewers"] -= 1
+
+          if (rooms[roomid]["hostsocket"]) {
+            rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
+          }
+          cleanUp();
+        })
+
+        // send rtp capabilities
+        console.log("Sending router capabilities")
+        socket.emit('routerRtpCapabilities', router.rtpCapabilities);
+
+        // ===========================
+        // Médialeves viewer cucca
+        // ===========================
+
+        socket.on("createConsumerTransport", async (_, cb) => {
+          console.log("createConsumerTransport")
+          const { transport, params } = await createWebRtcTransport();
+          rooms[roomid]["consumers"].set(socket.id, transport);
+          cb(params);
+        });
+
+        socket.on("connectConsumerTransport", async ({ dtlsParameters }, cb) => {
+          const t = rooms[roomid]["consumers"].get(socket.id);
+          await t.connect({ dtlsParameters });
+          cb();
+        });
+
+        socket.on("consume", async ({ rtpCapabilities }, cb) => {
+          if (socket.consuming == true) {
+            cb({ error: "already consuming" })
+            return;
+          }
+
+          socket.consuming = true;
+          if (!rooms[roomid]["producer"]) {
+            cb({ error: "no producer" });
+            socket.consuming = false;
+            return;
+          }
+
+          if (!router.canConsume({ producerId: rooms[roomid]["producer"].id, rtpCapabilities })) {
+            cb({ error: "cant consume" });
+            return;
+          }
+
+          const transport = rooms[roomid]["consumers"].get(socket.id);
+          const consumer = await transport.consume({
+            producerId: rooms[roomid]["producer"].id,
+            rtpCapabilities,
+            paused: false
+          });
+
+          cb({
+            id: consumer.id,
+            producerId: rooms[roomid]["producer"].id,
+            kind: consumer.kind,
+            rtpParameters: consumer.rtpParameters
+          });
+        });
+
+      }
+
+      //attach host related event handlers
+      if (socket.isHost) {
+        socket.on("streaming", () => {
+          console.log("Host is streaming")
+        })
+
+        socket.on("setname", (name) => {
+          rooms[roomid]["roomname"] = name;
+          io.to(roomid).emit("namechange", name)
+        })
+
+        socket.on("setlimit", (limit) => {
+          rooms[roomid]["limit"] = limit;
+          socket.emit("limit_changed")
+        })
+
+        // még több médialeves
+
+        let videoTransport;
+
+        // ===========================
+        socket.on("createProducerTransport", async (_, cb) => {
+          const { transport, params } = await createWebRtcTransport();
+          videoTransport = transport;
+
+          cb(params);
+        });
+        // ===========================
+
+        socket.on("connectProducerTransport", async ({ dtlsParameters }, cb) => {
+          await videoTransport.connect({ dtlsParameters });
+          cb();
+        });
+        // ===========================
+
+        socket.on("produce", async ({ kind, rtpParameters }, cb) => {
+          rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
+          cb({ id: rooms[roomid]["producer"].id });
+          console.log("Ready to view")
+          setTimeout(() => {
+            io.to(roomid).emit("ready2view")
+          }, 1000);
+        });
+
+
+
+        // ===========================
+        // ===========================
+
+
+        socket.emit("viewcount", rooms[roomid]["viewers"]);
+
+
+        // send rtp capabilities
+        console.log("Sending router capabilities")
+        socket.emit('routerRtpCapabilities', router.rtpCapabilities);
+
+      }
+
+      socket.join(roomid);
+
+      socket.emit("namechange", rooms[roomid]["roomname"])
+    })
+  })
+
+  app.use("/webui", express.static("src/frontend"))
+
+  app.get("/api/rooms", (req, res) => {
+    const data = [];
+    for (let i in rooms) {
+      data.push({
+        id: i,
+        roomname: rooms[i]["roomname"],
+        viewers: rooms[i]["viewers"],
+        limit: rooms[i]["limit"],
+      })
+    }
+    return res.json({
+      success: true,
+      data: data
+    })
+  })
+
+  console.log("http://127.0.0.1:9000")
+});
