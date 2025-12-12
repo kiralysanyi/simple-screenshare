@@ -6,6 +6,7 @@ import { useParams } from "react-router";
 import getStream from "./utils/getStream";
 import { Device } from "mediasoup-client";
 import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
+import StreamViewer from "./StreamViewer";
 
 
 const Stream = () => {
@@ -14,6 +15,7 @@ const Stream = () => {
     const [password, setPassword] = useState("");
     const [showModal, setShowModal] = useState(false);
     const roomID = useParams()["id"];
+    const [previewStream, setPreviewStream] = useState<MediaStream>()
 
     useEffect(() => {
         let producerTransport: Transport;
@@ -23,25 +25,30 @@ const Stream = () => {
 
         const onDisconnected = () => {
             setIsConnected(false)
+            socket.emit("joinroom", roomID, true)
         }
 
         // média leves
 
-        const device = new Device();
+        let device = new Device();
 
         const onRouterRtpCapabilities = async (capabilities: RtpCapabilities) => {
             console.log(capabilities)
             // setup rtp
+            if (device.loaded) {
+                device = new Device();                
+            }
             await device.load({ routerRtpCapabilities: capabilities })
             console.log("Loaded rtp capabilities of server")
 
             // setup transport
             const stream = await getStream();
-            const videoTrack = stream?.getVideoTracks()[0];
+            setPreviewStream(stream);
+            const copiedStream = new MediaStream([stream.getVideoTracks()[0]])
+            const videoTrack = copiedStream?.getVideoTracks()[0];
 
             socket.emit("createProducerTransport", {}, async (params: TransportOptions<AppData>) => {
                 producerTransport = device.createSendTransport(params);
-                console.log("blyat")
 
                 producerTransport.on("connect", ({ dtlsParameters }, cb) => {
                     socket.emit("connectProducerTransport", { dtlsParameters }, cb);
@@ -98,7 +105,6 @@ const Stream = () => {
             socket.off("auth_required", onAuthRequired);
             socket.off("routerRtpCapabilities", onRouterRtpCapabilities);
             socket.off("namechange", onNameChange);
-            producerTransport.close();
         }
     }, [])
 
@@ -106,7 +112,7 @@ const Stream = () => {
         <div>
             {/* Video preview */}
             <div>
-                <video id="preview" autoPlay={true} muted={true}></video>
+                {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
                 <span>Connected: {isConnected ? "yes" : "no"}</span>
             </div>
             {/* Config */}

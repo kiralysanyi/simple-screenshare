@@ -19,6 +19,10 @@ const server = app.listen(9000);
 
 const io = new Server(server, socketOptions);
 
+io.on("error", (err) => {
+  console.error("Socketio error: ", err)
+})
+
 //mediasoup start
 
 const mediasoup = require('mediasoup');
@@ -99,15 +103,22 @@ createWorkerAndRouter().then(() => {
       socket.authenticated = true;
       socket.emit("require_auth", false)
     }
+
+
+
     socket.on("joinroom", (roomid, isHost) => {
-      console.log("Joining room: ", roomid, isHost)
+
+      if (isHost != true) {
+        socket.join(roomid);
+      }
+
+      console.log("Joining room: ", roomid, isHost, socket.id)
       //remove empty rooms
       const cleanUp = () => {
         if (rooms[roomid] == undefined) {
           return;
         }
         console.log("Socket disconnected")
-        console.log(rooms[roomid])
         if (rooms[roomid]["hostsocket"] == undefined && rooms[roomid]["viewers"] == 0) {
           console.log("Removing empty room: ", roomid)
           delete rooms[roomid];
@@ -127,7 +138,7 @@ createWorkerAndRouter().then(() => {
         }
       }
 
-      if (rooms[roomid]["viewers"] > rooms[roomid]["limit"] && socket.isHost != true) {
+      if (rooms[roomid]["viewers"] > rooms[roomid]["limit"] && isHost != true) {
         console.log("Room full: ", roomid)
         socket.emit("room_full");
         return;
@@ -146,15 +157,13 @@ createWorkerAndRouter().then(() => {
             return
           }
         }
-        socket.isHost = true;
         rooms[roomid]["hostsocket"] = socket;
-        socket.on("disconnect", () => {
+        socket.once("disconnect", () => {
           rooms[roomid]["hostsocket"] = undefined;
           io.to(roomid).emit("hostleft")
+          console.log("Host left at: ", new Date().toLocaleTimeString())
           cleanUp();
         })
-      } else {
-        socket.isHost = false;
       }
 
 
@@ -162,7 +171,12 @@ createWorkerAndRouter().then(() => {
       if (isHost != true) {
         // handle new viewer
 
+        socket.on("reset", () => {
+          socket.consuming = false;
+        })
+
         socket.on("disconnect", () => {
+          socket.consuming = false;
           if (!rooms[roomid]) {
             return;
           }
@@ -229,10 +243,12 @@ createWorkerAndRouter().then(() => {
           });
         });
 
+        socket.emit("ready2view")
+
       }
 
       //attach host related event handlers
-      if (socket.isHost) {
+      if (isHost == true) {
         socket.on("streaming", () => {
           console.log("Host is streaming")
         })
@@ -269,10 +285,8 @@ createWorkerAndRouter().then(() => {
         socket.on("produce", async ({ kind, rtpParameters }, cb) => {
           rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
           cb({ id: rooms[roomid]["producer"].id });
-          console.log("Ready to view")
-          setTimeout(() => {
-            io.to(roomid).emit("ready2view")
-          }, 1000);
+          console.log("Ready to view", roomid, new Date().toLocaleTimeString())
+          io.to(roomid).emit("ready2view", "")
         });
 
 
@@ -289,9 +303,6 @@ createWorkerAndRouter().then(() => {
         socket.emit('routerRtpCapabilities', router.rtpCapabilities);
 
       }
-
-      socket.join(roomid);
-
       socket.emit("namechange", rooms[roomid]["roomname"])
     })
   })

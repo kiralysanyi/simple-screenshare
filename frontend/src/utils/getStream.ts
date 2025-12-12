@@ -12,13 +12,14 @@ const captureScreen = async (framerate: number = 15, width?: number, height?: nu
 
         return stream;
     } catch (err) {
+        return new MediaStream();
         console.error("User hates permissions or something failed:", err);
     }
 }
 
 let stream: MediaStream | undefined;
 
-const getStream = async () => {
+const getStream = async (): Promise<MediaStream> => {
     try {
         if (stream == undefined) {
             stream = await captureScreen();
