@@ -3,7 +3,7 @@ name: Publish Docker image (dev)
 on:
   push:
     branches:
-      - dev   # or your default branch
+      - testing   # or your default branch
 
 jobs:
   build-and-push:
@@ -45,8 +45,8 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/simple-screenshare:dev ./backend
+          docker build -t ghcr.io/${{ github.repository_owner }}/simple-screenshare:testing ./backend
 
       - name: Push Docker image
         run: |
-          docker push ghcr.io/${{ github.repository_owner }}/simple-screenshare:dev
+          docker push ghcr.io/${{ github.repository_owner }}/simple-screenshare:testing
