@@ -37,22 +37,34 @@ let router;
 
 // init webrtc server
 
-const webRtcServer = await mediasoup.createWebRtcServer({
-  listenInfos: [
-    {
-      protocol: 'udp',
-      ip: '0.0.0.0',
-      port: 44444,
-      announcedIp: process.env.ANNOUNCED_IP   // your real LAN IP
-    },
-    {
-      protocol: 'tcp',
-      ip: '0.0.0.0',
-      port: 44444,
-      announcedIp: process.env.ANNOUNCED_IP
-    }
-  ]
-});
+let rtcsrv;
+
+const getWebrtcServer = async () => {
+  if (!rtcsrv) {
+    const webRtcServer = await mediasoup.createWebRtcServer({
+      listenInfos: [
+        {
+          protocol: 'udp',
+          ip: '0.0.0.0',
+          port: 44444,
+          announcedIp: process.env.ANNOUNCED_IP   // your real LAN IP
+        },
+        {
+          protocol: 'tcp',
+          ip: '0.0.0.0',
+          port: 44444,
+          announcedIp: process.env.ANNOUNCED_IP
+        }
+      ]
+    });
+
+    rtcsrv = webRtcServer
+    return webRtcServer
+  } else {
+    return rtcsrv
+  }
+
+}
 
 // --- Initialization Function ---
 const createWorkerAndRouter = async () => {
@@ -87,7 +99,7 @@ const createWorkerAndRouter = async () => {
 
 async function createWebRtcTransport() {
   const transport = await router.createWebRtcTransport({
-    webRtcServer: webRtcServer,
+    webRtcServer: await getWebrtcServer(),
     listenIps: [{ ip: "0.0.0.0", announcedIp: process.env.ANNOUNCED_IP }],
     enableUdp: true,
     enableTcp: true,
