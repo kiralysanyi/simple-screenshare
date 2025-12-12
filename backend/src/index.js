@@ -59,6 +59,14 @@ const createWorkerAndRouter = async () => {
         'x-google-start-bitrate': 1000
       }
     },
+    {
+      kind: 'video',
+      mimeType: 'video/VP9',
+      clockRate: 90000,
+      parameters: {
+        'x-google-start-bitrate': 1000
+      }
+    }
   ];
 
   router = await worker.createRouter({ mediaCodecs });
@@ -71,7 +79,11 @@ async function createWebRtcTransport() {
     listenIps: [{ ip: "0.0.0.0", announcedIp: process.env.ANNOUNCED_IP }],
     enableUdp: true,
     enableTcp: true,
-    preferUdp: true
+    preferUdp: true,
+    enableSctp: true,
+    enableRtx: true,
+    numSctpStreams: { OS: 1024, MIS: 1024 },
+    maxBitrate: 2000_000
   });
 
   return {
