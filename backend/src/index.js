@@ -4,6 +4,11 @@ const fs = require("fs")
 const path = require("path");
 require('dotenv').config();
 
+if (process.env.ANNOUNCED_IP == undefined) {
+  console.error("ANNOUNCED_IP env variable is not defined")
+  process.exit(69)
+}
+
 const app = express();
 
 let socketOptions = undefined;
@@ -14,7 +19,7 @@ if (process.env.NODE_ENV === 'dev') {
   app.use(require('cors')({ origin: "*" }))
 }
 
-const server = app.listen(process.env.HTTP_PORT? process.env.HTTP_PORT: 9000);
+const server = app.listen(process.env.HTTP_PORT ? process.env.HTTP_PORT : 9000);
 
 const io = new Server(server, socketOptions);
 
@@ -30,10 +35,24 @@ const mediasoup = require('mediasoup');
 let worker;
 let router;
 
-// Stores active Producers (key: roomID, value: producer)
-const activeProducers = new Map();
-// Stores transports for a peer (key: roomid, value: { key: socketId, value: {sendTransport, recvTransport} })
-const peerTransports = new Map();
+// init webrtc server
+
+const webRtcServer = await mediasoup.createWebRtcServer({
+  listenInfos: [
+    {
+      protocol: 'udp',
+      ip: '0.0.0.0',
+      port: 44444,
+      announcedIp: process.env.ANNOUNCED_IP   // your real LAN IP
+    },
+    {
+      protocol: 'tcp',
+      ip: '0.0.0.0',
+      port: 44444,
+      announcedIp: process.env.ANNOUNCED_IP
+    }
+  ]
+});
 
 // --- Initialization Function ---
 const createWorkerAndRouter = async () => {
@@ -68,6 +87,7 @@ const createWorkerAndRouter = async () => {
 
 async function createWebRtcTransport() {
   const transport = await router.createWebRtcTransport({
+    webRtcServer: webRtcServer,
     listenIps: [{ ip: "0.0.0.0", announcedIp: process.env.ANNOUNCED_IP }],
     enableUdp: true,
     enableTcp: true,
