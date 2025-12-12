@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === 'dev') {
   app.use(require('cors')({ origin: "*" }))
 }
 
-const server = app.listen(9000);
+const server = app.listen(process.env.HTTP_PORT? process.env.HTTP_PORT: 9000);
 
 const io = new Server(server, socketOptions);
 
@@ -334,6 +334,4 @@ createWorkerAndRouter().then(() => {
       data: data
     })
   })
-
-  console.log("http://127.0.0.1:9000")
 });
