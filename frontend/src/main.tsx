@@ -5,6 +5,8 @@ import App from './App'
 import Stream from './Stream'
 import View from './View'
 
+document.title = "Simple Screenshare"
+
 createRoot(document.getElementById('root')!).render(
   <BrowserRouter>
     <Routes>
