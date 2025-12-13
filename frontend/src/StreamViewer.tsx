@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-const StreamViewer = ({ stream }: { stream?: MediaStream }) => {
+const StreamViewer = ({ stream, className }: { stream?: MediaStream, className?: string }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -21,6 +21,7 @@ const StreamViewer = ({ stream }: { stream?: MediaStream }) => {
             autoPlay
             playsInline
             muted
+            className={className}
             style={{ width: "100%", background: "#000" }}
         />
     )

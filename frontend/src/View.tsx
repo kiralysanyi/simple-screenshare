@@ -4,6 +4,7 @@ import { Device } from "mediasoup-client";
 import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
 import { useParams } from "react-router";
 import StreamViewer from "./StreamViewer";
+import "./css/view.css"
 
 
 const View = () => {
@@ -106,7 +107,7 @@ const View = () => {
     }, [])
 
     return <>
-        {stream ? <StreamViewer stream={stream} /> : ""}
+        {stream ? <StreamViewer className="streamView" stream={stream} /> : ""}
     </>
 }
 

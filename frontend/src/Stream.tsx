@@ -169,6 +169,7 @@ const Stream = () => {
     }, [])
 
     const [newRoomName, setNewRoomName] = useState(roomName);
+    const [linkGreen, setLinkGreen] = useState(false)
 
     return <>
         <div className="streamHostContainer">
@@ -179,8 +180,12 @@ const Stream = () => {
                 <span className="viewers">Viewers: {viewers}</span>
                 <h2>Invite link</h2>
                 <span>Click to copy</span>
-                <span className="inviteLink" onClick={() => {
-                    navigator.clipboard.writeText(`${location.protocol}//${location.host}/view/${roomID}`)
+                <span className={`${linkGreen? "linkGreen": ""} inviteLink`} onClick={() => {
+                    navigator.clipboard.writeText(`${location.protocol}//${location.host}/view/${roomID}`);
+                    setLinkGreen(true)
+                    setTimeout(() => {
+                        setLinkGreen(false);
+                    }, 500);
                 }}>{`${location.protocol}//${location.host}/view/${roomID}`}</span>
             </div>
             {/* Config */}
