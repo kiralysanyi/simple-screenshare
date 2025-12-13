@@ -102,3 +102,37 @@ button:focus-visible {
 .streamListItem:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
+
+.statusIndicator {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  min-width: 300px;
+  height: 3rem;
+  transition: 200ms;
+  text-align: center;
+  line-height: 3rem;
+  border-radius: 1rem;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.error {
+  background-color: rgb(124, 0, 0);
+}
+
+.ok {
+  background-color: green;
+}
+
+.loading {
+  background-color: rgb(124, 81, 0);
+}
+
+.collapsed {
+  min-width: 16px;
+  width: 16px;
+  height: 16px;
+  border-radius: 16px;
+  opacity: 0.3;
+}

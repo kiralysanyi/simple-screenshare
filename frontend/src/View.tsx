@@ -5,6 +5,7 @@ import type { AppData, RtpCapabilities, Transport, TransportOptions } from "medi
 import { useParams } from "react-router";
 import StreamViewer from "./StreamViewer";
 import "./css/view.css"
+import StatusIndicator from "./StatusIndicator";
 
 
 const View = () => {
@@ -12,14 +13,17 @@ const View = () => {
     const [stream, setStream] = useState<MediaStream>()
     const roomID = useParams()["id"];
     const [roomFull, setRoomFull] = useState(false);
+    const [status, setStatus] = useState<"ok" | "loading" | "error">("loading");
+    const [statusMessage, setStatusMessage] = useState("Loading")
 
     useEffect(() => {
         let isFirstLaunch = true;
         let rtpCapabilities: RtpCapabilities;
 
         const onConnected = () => {
+            setStatus("loading");
+            setStatusMessage("Connected to server")
             if (isFirstLaunch == false) {
-                console.log("Re attaching", socket.connected)
                 socket.emit("joinroom", roomID, false)
             }
         }
@@ -28,6 +32,8 @@ const View = () => {
 
         const onDisconnected = () => {
             consuming = false;
+            setStatusMessage("Disconnected");
+            setStatus("error");
         }
 
         let device: Device;
@@ -56,6 +62,8 @@ const View = () => {
                     if (data.error) {
                         console.error(data.error)
                         console.log("no producer yet");
+                        setStatus("loading");
+                        setStatusMessage("Waiting for stream")
                         consuming = false;
                         return;
                     }
@@ -72,6 +80,8 @@ const View = () => {
 
                     console.log(consumer.track)
                     setStream(new MediaStream([consumer.track]));
+                    setStatus("ok")
+                    setStatusMessage("Connected")
                 });
             });
         }
@@ -89,11 +99,15 @@ const View = () => {
         const onHostLeft = () => {
             consuming = false;
             console.log("Host left")
+            setStatus("loading")
+            setStatusMessage("Host left, waiting for stream")
             socket.emit("reset")
         }
         socket.on("hostleft", onHostLeft)
 
         socket.on("ready2view", () => {
+            setStatus("loading");
+            setStatusMessage("Connecting");
             console.log("Ready to view", rtpCapabilities)
             rtpCapabilities ? startConsuming(rtpCapabilities) : null;
         })
@@ -123,6 +137,7 @@ const View = () => {
         {roomFull ? <div className="modal_bg"><div className="modal">
             <h1>This room is full, please try again later.</h1>
         </div></div> : ""}
+        <StatusIndicator message={statusMessage} status={status} />
     </>
 }
 

@@ -244,6 +244,9 @@ createWorkerAndRouter().then(() => {
         })
 
         socket.once("leaveroom", () => {
+          if (rooms[roomid] == undefined) {
+            return;
+          }
           if (rooms[roomid]["viewers"] > 0) {
             rooms[roomid]["viewers"] -= 1
           }
