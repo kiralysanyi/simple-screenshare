@@ -1,12 +1,9 @@
 import { Link } from 'react-router'
 import './App.css'
 import { useEffect, useState } from 'react'
-import getBaseUrl from './utils/getBaseUrl'
 import type { room } from './interfaces/room'
 import createRandomString from './utils/createRandomString'
 import socket from './Socket'
-
-const baseUrl = getBaseUrl();
 
 function App() {
 

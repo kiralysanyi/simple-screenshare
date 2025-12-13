@@ -5,7 +5,7 @@ import socket from "./Socket";
 import { useParams } from "react-router";
 import getStream from "./utils/getStream";
 import { Device } from "mediasoup-client";
-import type { AppData, Producer, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
+import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
 import StreamViewer from "./StreamViewer";
 
 
