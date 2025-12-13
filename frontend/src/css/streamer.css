@@ -1,0 +1,46 @@
+.infoPanel {
+    display:  flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 50%;
+    user-select: none;
+}
+
+.settingsPanel {
+    width: 50%;
+}
+
+.streamHostContainer {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    align-items: center;
+}
+
+.inviteLink {
+    padding: 1rem;
+    background-color: rgb(18, 18, 18);
+    font-size: 1.5rem;
+    border-radius: 1rem;
+    user-select: none;
+    cursor: copy;
+    transition: 200ms;
+}
+
+.inviteLink:hover {
+    background-color: rgb(43, 43, 43);
+}
+
+.linkGreen {
+    background-color: rgb(0, 152, 0) !important;
+}
+
+.viewers {
+    font-weight: bold;
+}

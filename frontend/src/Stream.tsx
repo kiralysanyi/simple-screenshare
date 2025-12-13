@@ -7,7 +7,7 @@ import getStream from "./utils/getStream";
 import { Device } from "mediasoup-client";
 import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
 import StreamViewer from "./StreamViewer";
-
+import "./css/streamer.css"
 
 
 const Stream = () => {
@@ -116,6 +116,7 @@ const Stream = () => {
         socket.emit("joinroom", roomID, true)
 
         return () => {
+            producerTransportRef.current?.close();
             socket.emit("leaveroom");
             socket.off("connect", onConnected);
             socket.off("disconnect", onDisconnected);
@@ -145,20 +146,66 @@ const Stream = () => {
         firstRender.current = false;
     })
 
+    //misc event listeners
+    const [viewers, setViewers] = useState(0);
+    const [roomName, setRoomName] = useState("");
+    useEffect(() => {
+        const onViewcount = (viewcount: number) => {
+            setViewers(viewcount)
+        }
+
+        const onNameChange = (name: string) => {
+            setRoomName(name);
+        }
+
+        socket.on("viewcount", onViewcount)
+        socket.on("namechange", onNameChange)
+
+        return () => {
+            socket.off("viewcount", onViewcount)
+            socket.off("namechange", onNameChange)
+        }
+
+    }, [])
+
+    const [newRoomName, setNewRoomName] = useState(roomName);
+    const [linkGreen, setLinkGreen] = useState(false)
+
     return <>
-        <div>
+        <div className="streamHostContainer">
             {/* Video preview */}
-            <div>
+            <div className="infoPanel">
                 {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
                 <span>Connected: {isConnected ? "yes" : "no"}</span>
+                <span className="viewers">Viewers: {viewers}</span>
+                <h2>Invite link</h2>
+                <span>Click to copy</span>
+                <span className={`${linkGreen? "linkGreen": ""} inviteLink`} onClick={() => {
+                    navigator.clipboard.writeText(`${location.protocol}//${location.host}/view/${roomID}`);
+                    setLinkGreen(true)
+                    setTimeout(() => {
+                        setLinkGreen(false);
+                    }, 500);
+                }}>{`${location.protocol}//${location.host}/view/${roomID}`}</span>
             </div>
             {/* Config */}
-            <div>
-                <select value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)) }}>
-                    <option value={15}>15</option>
-                    <option value={30}>30</option>
-                    <option value={60}>60</option>
-                </select>
+            <div className="settingsPanel">
+                <h1>{roomName}</h1>
+                <div className="form-group">
+                    <label htmlFor="fps">Framerate</label>
+                    <select name="fps" value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)) }}>
+                        <option value={15}>15 (Recommended)</option>
+                        <option value={30}>30 (Recommended if you need higher fps)</option>
+                        <option value={60}>60 (Experimental, not recommended)</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="newName">New name for room</label>
+                    <input type="text" placeholder="name" value={newRoomName} onChange={(ev) => {setNewRoomName(ev.target.value)}} />
+                    <button onClick={() => {
+                        socket.emit("setname", newRoomName)
+                    }}>Change</button>
+                </div>
             </div>
         </div>
         {showModal ? <div className="modal"></div> : ""}
