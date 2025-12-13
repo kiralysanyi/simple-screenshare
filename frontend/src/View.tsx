@@ -11,6 +11,7 @@ const View = () => {
 
     const [stream, setStream] = useState<MediaStream>()
     const roomID = useParams()["id"];
+    const [roomFull, setRoomFull] = useState(false);
 
     useEffect(() => {
         let isFirstLaunch = true;
@@ -96,10 +97,18 @@ const View = () => {
             console.log("Ready to view", rtpCapabilities)
             rtpCapabilities ? startConsuming(rtpCapabilities) : null;
         })
+
+        const onRoomFull = () => {
+            setRoomFull(true)
+        }
+
+        socket.on("room_full", onRoomFull)
+
         console.log("Joining")
         socket.emit("joinroom", roomID, false)
 
         return () => {
+            socket.off("room_full", onRoomFull)
             socket.off("routerRtpCapabilities", rtpHandler)
             socket.off("connect", onConnected);
             socket.off("disconnect", onDisconnected);
@@ -111,6 +120,9 @@ const View = () => {
 
     return <>
         {stream ? <StreamViewer className="streamView" stream={stream} /> : ""}
+        {roomFull ? <div className="modal_bg"><div className="modal">
+            <h1>This room is full, please try again later.</h1>
+        </div></div> : ""}
     </>
 }
 
