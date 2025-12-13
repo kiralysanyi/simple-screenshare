@@ -13,6 +13,8 @@ services:
       - HOST_PASS=valamijelszo # optional
       - ANNOUNCED_IP=192.168.1.117 # ip to announce for clients (this servers ip, should be accessable from all clients, or else you will get blank video)
       - HTTP_PORT=8888 # port of the http server
+      - RTC_MIN_PORT=40000 #optional RTC min udp port default: 40000
+      - RTC_MAX_PORT=40500 #optional RTC max udp port default: 40500
 networks:
   servicenet:
    external: true
