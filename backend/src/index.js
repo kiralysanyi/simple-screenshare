@@ -121,6 +121,14 @@ createWorkerAndRouter().then(() => {
     })
 
     socket.on("joinroom", (roomid, isHost) => {
+      if (rooms[roomid] != undefined) {
+        if (rooms[roomid]["viewers"] + 1 > rooms[roomid]["limit"] && isHost != true) {
+          console.log("Room full: ", roomid)
+          socket.emit("room_full");
+          return;
+        }
+      }
+
       if (process.env.HOST_PASS_ENABLE == 1 && socket.authenticated == false && isHost == true) {
         socket.once("auth", (pass) => {
           if (pass == process.env.HOST_PASS) {
@@ -164,12 +172,6 @@ createWorkerAndRouter().then(() => {
           producer: undefined,
           consumers: new Map()
         }
-      }
-
-      if (rooms[roomid]["viewers"] > rooms[roomid]["limit"] && isHost != true) {
-        console.log("Room full: ", roomid)
-        socket.emit("room_full");
-        return;
       }
 
       if (isHost == true && rooms[roomid]["hostsocket"] != undefined) {
@@ -331,19 +333,26 @@ createWorkerAndRouter().then(() => {
       //attach host related event handlers
       if (isHost == true) {
         socket.join(roomid)
-        socket.on("streaming", () => {
-          console.log("Host is streaming")
-        })
 
-        socket.on("setname", (name) => {
+        const onSetname = (name) => {
           rooms[roomid]["roomname"] = name;
           io.to(roomid).emit("namechange", name)
+        }
+
+        const onSetlimit = (limit) => {
+          rooms[roomid]["limit"] = limit;
+          socket.emit("limit_changed", limit)
+        }
+
+        socket.on("setname", onSetname)
+        socket.on("setlimit", onSetlimit)
+
+        socket.once("leaveroom", () => {
+          socket.on("setname", onSetname)
+          socket.on("setlimit", onSetlimit)
         })
 
-        socket.on("setlimit", (limit) => {
-          rooms[roomid]["limit"] = limit;
-          socket.emit("limit_changed")
-        })
+        socket.emit("limit_changed", rooms[roomid]["limit"])
 
         // még több médialeves
 
