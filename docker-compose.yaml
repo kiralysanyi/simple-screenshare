@@ -3,7 +3,7 @@ name: screenshare
 services:
   server:
     container_name: simple-screenshare
-    image: ghcr.io/kiralysanyi/simple-screenshare::latest # or :testing for more recent but untested versions
+    image: ghcr.io/kiralysanyi/simple-screenshare:latest # or :testing for more recent but untested versions
     network_mode: host # yes, i dont like it but needed because webrtc is allergic to nat
     restart: unless-stopped
     healthcheck:
