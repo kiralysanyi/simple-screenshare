@@ -26,6 +26,7 @@ const Stream = () => {
 
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
+    const [viewerLimit, setViewerLimit] = useState(20);
 
 
     const setupTransport = useCallback(async () => {
@@ -135,18 +136,31 @@ const Stream = () => {
             }
         }
 
+        const onLimitchanged = (limitFromServer: number) => {
+            const savedLimit = localStorage.getItem("viewerLimit")
+            if (savedLimit) {
+                if (parseInt(savedLimit) != limitFromServer) {
+                    socket.emit("setlimit", parseInt(savedLimit));
+                    return;
+                }
+            }
+            setViewerLimit(limitFromServer)
+        }
+
         socket.on("require_auth", onAuthRequired);
         socket.on("viewcount", onViewcount)
         socket.on("namechange", onNameChange)
         socket.on("wrongpass", onWrongPass)
+        socket.on("limit_changed", onLimitchanged)
 
         console.log("Joining")
-        socket.emit("joinroom", roomID, true);
 
         socket.on("connect", onConnected);
         socket.on("disconnect", onDisconnected);
         socket.on("routerRtpCapabilities", onRouterRtpCapabilities);
         setIsConnected(socket.connected);
+
+        socket.emit("joinroom", roomID, true);
         return () => {
             console.log("Cleaning up")
             producerTransportRef.current?.close();
@@ -158,6 +172,7 @@ const Stream = () => {
             socket.off("namechange", onNameChange)
             socket.off("wrongpass", onWrongPass)
             socket.off("require_auth", onAuthRequired);
+            socket.off("limit_changed", onLimitchanged)
         }
     }, [])
 
@@ -183,7 +198,16 @@ const Stream = () => {
 
 
     const [newRoomName, setNewRoomName] = useState(roomName);
-    const [linkGreen, setLinkGreen] = useState(false)
+    const [linkGreen, setLinkGreen] = useState(false);
+
+    const updateViewerLimit = (newLimit: number) => {
+        if (newLimit < 1) {
+            setViewerLimit(1);
+            return;
+        }
+        localStorage.setItem("viewerLimit", newLimit.toString())
+        socket.emit("setlimit", newLimit);
+    }
 
     return <>
         <div className="streamHostContainer">
@@ -191,7 +215,7 @@ const Stream = () => {
             <div className="infoPanel">
                 {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
                 <span>Connected: {isConnected ? "yes" : "no"}</span>
-                <span className="viewers">Viewers: {viewers}</span>
+                <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
                 <h2>Invite link</h2>
                 <span>Click to copy</span>
                 <span className={`${linkGreen ? "linkGreen" : ""} inviteLink`} onClick={() => {
@@ -219,6 +243,10 @@ const Stream = () => {
                     <button onClick={() => {
                         socket.emit("setname", newRoomName)
                     }}>Change</button>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="newLimit">Max number of viewers allowed</label>
+                    <input type="number" name="newLimit" value={viewerLimit} onChange={(ev) => updateViewerLimit(parseInt(ev.target.value))} />
                 </div>
             </div>
         </div>
