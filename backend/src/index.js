@@ -147,7 +147,6 @@ createWorkerAndRouter().then(() => {
         if (rooms[roomid] == undefined) {
           return;
         }
-        console.log("Socket disconnected")
         if (rooms[roomid]["hostsocket"] == undefined && rooms[roomid]["viewers"] < 1) {
           console.log("Removing empty room: ", roomid)
           delete rooms[roomid];
@@ -258,7 +257,7 @@ createWorkerAndRouter().then(() => {
         // Médialeves viewer cucca
         // ===========================
 
-        socket.on("createConsumerTransport", async (_, cb) => {
+        const onCreateConsumerTransport = async (_, cb) => {
           console.log("createConsumerTransport")
           const { transport, params } = await createWebRtcTransport();
           socket.once("disconnect", () => {
@@ -269,15 +268,16 @@ createWorkerAndRouter().then(() => {
           })
           socket.once("leaveroom", () => {
             if (rooms[roomid]) {
+              console.log("Deleted consumer: ", socket.id)
               rooms[roomid]["consumers"].delete(socket.id);
             }
             transport.close();
           })
           rooms[roomid]["consumers"].set(socket.id, transport);
           cb(params);
-        });
+        }
 
-        socket.on("connectConsumerTransport", async ({ dtlsParameters }, cb) => {
+        const onConnectConsumerTransport = async ({ dtlsParameters }, cb) => {
           try {
             const t = rooms[roomid]["consumers"].get(socket.id);
             await t.connect({ dtlsParameters });
@@ -286,9 +286,9 @@ createWorkerAndRouter().then(() => {
             console.error("Connect consumer error: ", error)
           }
 
-        });
+        }
 
-        socket.on("consume", async ({ rtpCapabilities }, cb) => {
+        const onConsume = async ({ rtpCapabilities }, cb) => {
           if (!rooms[roomid]["producer"]) {
             cb({ error: "no producer" });
             return;
@@ -312,7 +312,17 @@ createWorkerAndRouter().then(() => {
             kind: consumer.kind,
             rtpParameters: consumer.rtpParameters
           });
-        });
+        }
+
+        socket.on("createConsumerTransport", onCreateConsumerTransport);
+        socket.on("connectConsumerTransport", onConnectConsumerTransport);
+        socket.on("consume", onConsume);
+
+        socket.once("leaveroom", () => {
+          socket.off("createConsumerTransport", onCreateConsumerTransport);
+          socket.off("connectConsumerTransport", onConnectConsumerTransport);
+          socket.off("consume", onConsume);
+        })
 
         socket.emit("ready2view")
 
@@ -338,9 +348,8 @@ createWorkerAndRouter().then(() => {
         // még több médialeves
 
         let videoTransport;
-
         // ===========================
-        socket.on("createProducerTransport", async (_, cb) => {
+        const onCreateProducerTransport = async (_, cb) => {
           const { transport, params } = await createWebRtcTransport();
           videoTransport = transport;
           socket.once("close", () => {
@@ -352,16 +361,14 @@ createWorkerAndRouter().then(() => {
           })
 
           cb(params);
-        });
+        }
         // ===========================
-
-        socket.on("connectProducerTransport", async ({ dtlsParameters }, cb) => {
+        const onConnectProducerTransport = async ({ dtlsParameters }, cb) => {
           await videoTransport.connect({ dtlsParameters });
           cb();
-        });
+        }
         // ===========================
-
-        socket.on("produce", async ({ kind, rtpParameters }, cb) => {
+        const onProduce = async ({ kind, rtpParameters }, cb) => {
           if (rooms[roomid] == undefined) {
             console.error("Failed to add producer to room: room not found")
             socket.emit("error", "Failed to add producer to room: room not found")
@@ -371,13 +378,20 @@ createWorkerAndRouter().then(() => {
           cb({ id: rooms[roomid]["producer"].id });
           console.log("Ready to view", roomid, new Date().toLocaleTimeString())
           io.to(roomid).emit("ready2view", "")
-        });
-
-
+        }
 
         // ===========================
-        // ===========================
+        socket.on("createProducerTransport", onCreateProducerTransport);
+        socket.on("connectProducerTransport", onConnectProducerTransport);
+        socket.on("produce", onProduce);
 
+        socket.once("leaveroom", () => {
+          socket.off("createProducerTransport", onCreateProducerTransport);
+          socket.off("connectProducerTransport", onConnectProducerTransport);
+          socket.off("produce", onProduce);
+        })
+
+        // ===========================
 
         socket.emit("viewcount", rooms[roomid]["viewers"]);
 
