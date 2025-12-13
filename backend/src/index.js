@@ -148,7 +148,7 @@ createWorkerAndRouter().then(() => {
           return;
         }
         console.log("Socket disconnected")
-        if (rooms[roomid]["hostsocket"] == undefined && rooms[roomid]["viewers"] == 0) {
+        if (rooms[roomid]["hostsocket"] == undefined && rooms[roomid]["viewers"] < 1) {
           console.log("Removing empty room: ", roomid)
           delete rooms[roomid];
         }
@@ -188,6 +188,9 @@ createWorkerAndRouter().then(() => {
         }
         rooms[roomid]["hostsocket"] = socket;
         socket.once("disconnect", () => {
+          if (!rooms[roomid]) {
+            return;
+          }
           rooms[roomid]["hostsocket"] = undefined;
           io.to(roomid).emit("hostleft")
           console.log("Host left at: ", new Date().toLocaleTimeString())
@@ -195,6 +198,9 @@ createWorkerAndRouter().then(() => {
         })
 
         socket.once("leaveroom", () => {
+          if (!rooms[roomid]) {
+            return;
+          }
           rooms[roomid]["hostsocket"] = undefined;
           io.to(roomid).emit("hostleft")
           console.log("Host left at: ", new Date().toLocaleTimeString())
@@ -215,8 +221,12 @@ createWorkerAndRouter().then(() => {
 
       if (isHost != true) {
         // handle new viewer
+        rooms[roomid]["viewers"] += 1
+        if (rooms[roomid]["hostsocket"]) {
+          rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
+        }
 
-        socket.on("disconnect", () => {
+        socket.once("disconnect", () => {
           if (!rooms[roomid]) {
             return;
           }
@@ -226,6 +236,12 @@ createWorkerAndRouter().then(() => {
           if (rooms[roomid]["hostsocket"]) {
             rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
           }
+          cleanUp();
+        })
+
+        socket.once("leaveroom", () => {
+          rooms[roomid]["viewers"] -= 1
+          rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
           cleanUp();
         })
 
@@ -288,6 +304,7 @@ createWorkerAndRouter().then(() => {
 
       //attach host related event handlers
       if (isHost == true) {
+        socket.join(roomid)
         socket.on("streaming", () => {
           console.log("Host is streaming")
         })
@@ -329,6 +346,10 @@ createWorkerAndRouter().then(() => {
         // ===========================
 
         socket.on("produce", async ({ kind, rtpParameters }, cb) => {
+          if (rooms[roomid] == undefined) {
+            console.error("Failed to add producer to room: room not found")
+            return;
+          }
           rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
           cb({ id: rooms[roomid]["producer"].id });
           console.log("Ready to view", roomid, new Date().toLocaleTimeString())
