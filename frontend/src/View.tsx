@@ -105,6 +105,7 @@ const View = () => {
             socket.off("disconnect", onDisconnected);
             socket.off("hostleft", onHostLeft);
             socket.off("ready2view", startConsuming)
+            socket.emit("leaveroom")
         }
     }, [])
 
