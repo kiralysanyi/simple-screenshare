@@ -85,4 +85,20 @@ button:focus-visible {
   gap: 0.5rem;
   padding: 1rem;
   border-radius: 2rem;
+  user-select: none;
+}
+
+.streamListItem {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  cursor: pointer;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 2rem;
+  transition: 200ms;
+}
+
+.streamListItem:hover {
+  background-color: rgba(255, 255, 255, 0.1);
 }

@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import './App.css'
 import { useEffect, useState } from 'react'
 import type { room } from './interfaces/room'
@@ -8,6 +8,7 @@ import socket from './Socket'
 function App() {
 
   const [rooms, setRooms] = useState<Array<room>>([])
+  const Navigate = useNavigate();
 
   useEffect(() => {
 
@@ -30,12 +31,15 @@ function App() {
 
   return (
     <>
-      <h1>Simple screenshare</h1>
+      <h1>Simple Screenshare</h1>
       <Link to={`/stream/${createRandomString(10)}`}><button>Start stream</button></Link>
       <h2>Available streams</h2>
       <div className='streamList'>
-        {rooms.map(room => <div>
-          <h1>{room.roomname}</h1>
+        {rooms.map(room => <div className='streamListItem' onClick={() => {
+          Navigate("/view/" + room.id)
+        }}>
+          <h2>{room.roomname}</h2>
+          <span>Viewers: {room.viewers}</span>
         </div>)}
       </div>
     </>

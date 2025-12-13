@@ -23,13 +23,15 @@ const View = () => {
             }
         }
 
+        let consuming = false;
+
         const onDisconnected = () => {
+            consuming = false;
         }
 
         let device: Device;
         let consumerTransport: Transport;
 
-        let consuming = false;
 
         async function startConsuming(capabilities: RtpCapabilities) {
             if (consuming == true) {
@@ -103,6 +105,7 @@ const View = () => {
             socket.off("disconnect", onDisconnected);
             socket.off("hostleft", onHostLeft);
             socket.off("ready2view", startConsuming)
+            socket.emit("leaveroom")
         }
     }, [])
 
