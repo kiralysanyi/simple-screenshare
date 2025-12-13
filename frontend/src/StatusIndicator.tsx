@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 
 const StatusIndicator = ({ status, message }: { status: "ok" | "loading" | "error", message: string }) => {
     const [collapsed, setCollapsed] = useState(false);
