@@ -16,12 +16,18 @@ const Stream = () => {
     const producerTransportRef = useRef<Transport | null>(null);
 
     const [isConnected, setIsConnected] = useState(false)
-    //const [password, setPassword] = useState("");
+    const [password, setPassword] = useState("");
     const [showModal, setShowModal] = useState(false);
+    const [passwordError, setPasswordError] = useState(false);
     const roomID = useParams()["id"];
     const [previewStream, setPreviewStream] = useState<MediaStream>()
     const [framerate, setFramerate] = useState(15)
     const firstRender = useRef(true);
+    const savedPassword = useRef<string>(null)
+
+    const [viewers, setViewers] = useState(0);
+    const [roomName, setRoomName] = useState("");
+
 
     const setupTransport = useCallback(async () => {
         const device = deviceRef.current
@@ -63,12 +69,15 @@ const Stream = () => {
     }, [framerate])
 
     useEffect(() => {
+        let joined = false;
+
         const onConnected = () => {
             setIsConnected(true)
         }
 
         const onDisconnected = () => {
-            setIsConnected(false)
+            setIsConnected(false);
+            joined = false;
             socket.emit("joinroom", roomID, true)
         }
 
@@ -90,39 +99,62 @@ const Stream = () => {
 
         }
 
+
+        const onViewcount = (viewcount: number) => {
+            setViewers(viewcount)
+        }
+
+        const onNameChange = (name: string) => {
+            setRoomName(name);
+        }
+
+        const onWrongPass = () => {
+            setPasswordError(true);
+            setShowModal(true);
+        }
+
+
         const onAuthRequired = (authNeeded: boolean) => {
+            console.log("Auth needed: ", authNeeded)
             if (authNeeded) {
+                if (savedPassword.current != null) {
+                    socket.emit("auth", savedPassword.current)
+                    return;
+                }
                 setShowModal(true)
                 return;
             }
 
-            socket.emit("joinroom", roomID, true)
+            setShowModal(false);
+            if (joined == false) {
+                joined = true
+                socket.emit("joinroom", roomID, true)
+            }
         }
 
-        const onNameChange = (name: string) => {
-            console.log(name)
-        }
+        socket.on("require_auth", onAuthRequired);
+        socket.on("viewcount", onViewcount)
+        socket.on("namechange", onNameChange)
+        socket.on("wrongpass", onWrongPass)
 
-
+        console.log("Joining")
+        socket.emit("joinroom", roomID, true);
 
         socket.on("connect", onConnected);
         socket.on("disconnect", onDisconnected);
-        socket.on("auth_required", onAuthRequired);
         socket.on("routerRtpCapabilities", onRouterRtpCapabilities);
-        socket.on("namechange", onNameChange)
-
         setIsConnected(socket.connected);
-
-        socket.emit("joinroom", roomID, true)
-
         return () => {
+            console.log("Cleaning up")
             producerTransportRef.current?.close();
             socket.emit("leaveroom");
             socket.off("connect", onConnected);
             socket.off("disconnect", onDisconnected);
-            socket.off("auth_required", onAuthRequired);
             socket.off("routerRtpCapabilities", onRouterRtpCapabilities);
-            socket.off("namechange", onNameChange);
+            socket.off("viewcount", onViewcount)
+            socket.off("namechange", onNameChange)
+            socket.off("wrongpass", onWrongPass)
+            socket.off("require_auth", onAuthRequired);
         }
     }, [])
 
@@ -146,27 +178,6 @@ const Stream = () => {
         firstRender.current = false;
     })
 
-    //misc event listeners
-    const [viewers, setViewers] = useState(0);
-    const [roomName, setRoomName] = useState("");
-    useEffect(() => {
-        const onViewcount = (viewcount: number) => {
-            setViewers(viewcount)
-        }
-
-        const onNameChange = (name: string) => {
-            setRoomName(name);
-        }
-
-        socket.on("viewcount", onViewcount)
-        socket.on("namechange", onNameChange)
-
-        return () => {
-            socket.off("viewcount", onViewcount)
-            socket.off("namechange", onNameChange)
-        }
-
-    }, [])
 
     const [newRoomName, setNewRoomName] = useState(roomName);
     const [linkGreen, setLinkGreen] = useState(false)
@@ -180,7 +191,7 @@ const Stream = () => {
                 <span className="viewers">Viewers: {viewers}</span>
                 <h2>Invite link</h2>
                 <span>Click to copy</span>
-                <span className={`${linkGreen? "linkGreen": ""} inviteLink`} onClick={() => {
+                <span className={`${linkGreen ? "linkGreen" : ""} inviteLink`} onClick={() => {
                     navigator.clipboard.writeText(`${location.protocol}//${location.host}/view/${roomID}`);
                     setLinkGreen(true)
                     setTimeout(() => {
@@ -201,14 +212,24 @@ const Stream = () => {
                 </div>
                 <div className="form-group">
                     <label htmlFor="newName">New name for room</label>
-                    <input type="text" placeholder="name" value={newRoomName} onChange={(ev) => {setNewRoomName(ev.target.value)}} />
+                    <input type="text" placeholder="name" value={newRoomName} onChange={(ev) => { setNewRoomName(ev.target.value) }} />
                     <button onClick={() => {
                         socket.emit("setname", newRoomName)
                     }}>Change</button>
                 </div>
             </div>
         </div>
-        {showModal ? <div className="modal"></div> : ""}
+        {showModal ? <div className="modal_bg">
+            <div className="modal">
+                <h1>Password required to start stream.</h1>
+                {passwordError ? <h2 style={{ color: "red" }}>Wrong password</h2> : ""}
+                <div className="form-group">
+                    <label htmlFor="passwd">Password</label>
+                    <input type="password" placeholder="Server password" value={password} onChange={(ev) => { setPassword(ev.target.value) }} />
+                    <button onClick={() => { socket.emit("auth", password); savedPassword.current = password }}>Start</button>
+                </div>
+            </div>
+        </div> : ""}
     </>
 }
 

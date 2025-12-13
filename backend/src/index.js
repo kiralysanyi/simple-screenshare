@@ -120,22 +120,22 @@ createWorkerAndRouter().then(() => {
       socket.emit("roomlist", data)
     })
 
-    if (process.env.HOST_PASS_ENABLE == 1) {
-      socket.on("auth", (pass) => {
-        if (pass == process.env.HOST_PASS) {
-          socket.authenticated = true;
-          socket.emit("require_auth", false);
-        }
-      })
-      socket.emit("require_auth", true)
-    } else {
-      socket.authenticated = true;
-      socket.emit("require_auth", false)
-    }
-
-
-
     socket.on("joinroom", (roomid, isHost) => {
+      if (process.env.HOST_PASS_ENABLE == 1 && socket.authenticated == false && isHost == true) {
+        socket.once("auth", (pass) => {
+          if (pass == process.env.HOST_PASS) {
+            socket.authenticated = true;
+            socket.emit("require_auth", false);
+          } else {
+            socket.emit("wrongpass")
+          }
+        })
+        socket.emit("require_auth", true)
+        return;
+      } else {
+        socket.authenticated = true;
+        socket.emit("require_auth", false)
+      }
 
       if (isHost != true) {
         socket.join(roomid);
@@ -202,6 +202,7 @@ createWorkerAndRouter().then(() => {
             return;
           }
           rooms[roomid]["hostsocket"] = undefined;
+          rooms[roomid]["producer"] = undefined
           io.to(roomid).emit("hostleft")
           console.log("Host left at: ", new Date().toLocaleTimeString())
           cleanUp();
@@ -258,8 +259,14 @@ createWorkerAndRouter().then(() => {
           const { transport, params } = await createWebRtcTransport();
           socket.once("disconnect", () => {
             transport.close();
+            if (rooms[roomid]) {
+              rooms[roomid]["consumers"].delete(socket.id);
+            }
           })
           socket.once("leaveroom", () => {
+            if (rooms[roomid]) {
+              rooms[roomid]["consumers"].delete(socket.id);
+            }
             transport.close();
           })
           rooms[roomid]["consumers"].set(socket.id, transport);
@@ -267,9 +274,14 @@ createWorkerAndRouter().then(() => {
         });
 
         socket.on("connectConsumerTransport", async ({ dtlsParameters }, cb) => {
-          const t = rooms[roomid]["consumers"].get(socket.id);
-          await t.connect({ dtlsParameters });
-          cb();
+          try {
+            const t = rooms[roomid]["consumers"].get(socket.id);
+            await t.connect({ dtlsParameters });
+            cb();
+          } catch (error) {
+            console.error("Connect consumer error: ", error)
+          }
+
         });
 
         socket.on("consume", async ({ rtpCapabilities }, cb) => {
@@ -348,6 +360,7 @@ createWorkerAndRouter().then(() => {
         socket.on("produce", async ({ kind, rtpParameters }, cb) => {
           if (rooms[roomid] == undefined) {
             console.error("Failed to add producer to room: room not found")
+            socket.emit("error", "Failed to add producer to room: room not found")
             return;
           }
           rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
