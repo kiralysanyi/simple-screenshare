@@ -1,0 +1,65 @@
+.infoPanel {
+    display:  flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 50%;
+    user-select: none;
+}
+
+.settingsPanel {
+    width: 50%;
+}
+
+.streamHostContainer {
+    display: flex;
+    flex-direction: row;
+    gap: 2rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    align-items: center;
+}
+
+.inviteLink {
+    padding: 1rem;
+    background-color: rgb(18, 18, 18);
+    font-size: 1.5rem;
+    border-radius: 1rem;
+    user-select: none;
+    cursor: copy;
+    transition: 200ms;
+}
+
+.inviteLink:hover {
+    background-color: rgb(43, 43, 43);
+}
+
+.linkGreen {
+    background-color: rgb(0, 152, 0) !important;
+}
+
+.viewers {
+    font-weight: bold;
+}
+
+.modal_bg {
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    padding: 2rem;
+    border-radius: 1rem;
+    background-color: rgb(31, 10, 10);
+    transform: translate(-50%, -50%);
+}
