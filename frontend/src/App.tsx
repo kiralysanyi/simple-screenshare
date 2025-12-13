@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import getBaseUrl from './utils/getBaseUrl'
 import type { room } from './interfaces/room'
 import createRandomString from './utils/createRandomString'
+import socket from './Socket'
 
 const baseUrl = getBaseUrl();
 
@@ -13,15 +14,12 @@ function App() {
 
   useEffect(() => {
 
+    socket.on("roomlist", (roomlist: Array<room>) => {
+      setRooms(roomlist);
+    })
+
     const update = () => {
-      fetch(baseUrl + "/api/rooms", {method: "GET", headers: {
-        "Content-Type": "application/json"
-      }}).then(async (response) => {
-        let data = await response.json();
-        setRooms(data.data);
-      }).catch((err) => {
-        console.error(err);
-      })
+      socket.emit("roomlist")
     }
 
     let updateInterval = setInterval(update, 5000);

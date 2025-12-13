@@ -40,8 +40,8 @@ const createWorkerAndRouter = async () => {
   // 1. Create a Worker
   worker = await mediasoup.createWorker({
     logLevel: 'warn', // Change to 'debug' for detailed logs
-    rtcMinPort: 40000,
-    rtcMaxPort: 40500
+    rtcMinPort: process.env.RTC_MIN_PORT ? process.env.RTC_MIN_PORT : 40000,
+    rtcMaxPort: process.env.RTC_MAX_PORT ? process.env.RTC_MAX_PORT : 40500
   });
 
   worker.on('died', () => {
@@ -59,6 +59,14 @@ const createWorkerAndRouter = async () => {
         'x-google-start-bitrate': 1000
       }
     },
+    {
+      kind: 'video',
+      mimeType: 'video/VP9',
+      clockRate: 90000,
+      parameters: {
+        'x-google-start-bitrate': 1000
+      }
+    }
   ];
 
   router = await worker.createRouter({ mediaCodecs });
@@ -71,8 +79,14 @@ async function createWebRtcTransport() {
     listenIps: [{ ip: "0.0.0.0", announcedIp: process.env.ANNOUNCED_IP }],
     enableUdp: true,
     enableTcp: true,
-    preferUdp: true
+    preferUdp: true,
+    enableSctp: true,
+    enableRtx: true,
+    numSctpStreams: { OS: 1024, MIS: 1024 },
+    maxBitrate: 2000_000
   });
+
+
 
   return {
     transport,
@@ -91,6 +105,20 @@ createWorkerAndRouter().then(() => {
 
   io.on("connection", (socket) => {
     socket.authenticated = false;
+
+    // handle room list requests
+    socket.on("roomlist", () => {
+      const data = [];
+      for (let i in rooms) {
+        data.push({
+          id: i,
+          roomname: rooms[i]["roomname"],
+          viewers: rooms[i]["viewers"],
+          limit: rooms[i]["limit"],
+        })
+      }
+      socket.emit("roomlist", data)
+    })
 
     if (process.env.HOST_PASS_ENABLE == 1) {
       socket.on("auth", (pass) => {
@@ -165,6 +193,22 @@ createWorkerAndRouter().then(() => {
           console.log("Host left at: ", new Date().toLocaleTimeString())
           cleanUp();
         })
+
+        socket.once("leaveroom", () => {
+          rooms[roomid]["hostsocket"] = undefined;
+          io.to(roomid).emit("hostleft")
+          console.log("Host left at: ", new Date().toLocaleTimeString())
+          cleanUp();
+        })
+
+        socket.on("resetStream", () => {
+          io.to(roomid).emit("hostleft")
+          console.log("Host reset at: ", new Date().toLocaleTimeString())
+        })
+
+        socket.on("reloadStream", () => {
+          io.to(roomid).emit("ready2view")
+        })
       }
 
 
@@ -172,12 +216,7 @@ createWorkerAndRouter().then(() => {
       if (isHost != true) {
         // handle new viewer
 
-        socket.on("reset", () => {
-          socket.consuming = false;
-        })
-
         socket.on("disconnect", () => {
-          socket.consuming = false;
           if (!rooms[roomid]) {
             return;
           }
@@ -201,6 +240,12 @@ createWorkerAndRouter().then(() => {
         socket.on("createConsumerTransport", async (_, cb) => {
           console.log("createConsumerTransport")
           const { transport, params } = await createWebRtcTransport();
+          socket.once("disconnect", () => {
+            transport.close();
+          })
+          socket.once("leaveroom", () => {
+            transport.close();
+          })
           rooms[roomid]["consumers"].set(socket.id, transport);
           cb(params);
         });
@@ -212,15 +257,8 @@ createWorkerAndRouter().then(() => {
         });
 
         socket.on("consume", async ({ rtpCapabilities }, cb) => {
-          if (socket.consuming == true) {
-            cb({ error: "already consuming" })
-            return;
-          }
-
-          socket.consuming = true;
           if (!rooms[roomid]["producer"]) {
             cb({ error: "no producer" });
-            socket.consuming = false;
             return;
           }
 
@@ -272,6 +310,13 @@ createWorkerAndRouter().then(() => {
         socket.on("createProducerTransport", async (_, cb) => {
           const { transport, params } = await createWebRtcTransport();
           videoTransport = transport;
+          socket.once("close", () => {
+            transport.close();
+          })
+
+          socket.once("leaveroom", () => {
+            transport.close();
+          })
 
           cb(params);
         });
@@ -318,20 +363,4 @@ createWorkerAndRouter().then(() => {
     })
     app.use("/assets", express.static("public/assets"))
   }
-
-  app.get("/api/rooms", (req, res) => {
-    const data = [];
-    for (let i in rooms) {
-      data.push({
-        id: i,
-        roomname: rooms[i]["roomname"],
-        viewers: rooms[i]["viewers"],
-        limit: rooms[i]["limit"],
-      })
-    }
-    return res.json({
-      success: true,
-      data: data
-    })
-  })
 });
