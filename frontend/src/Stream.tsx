@@ -23,7 +23,6 @@ const Stream = () => {
     const [previewStream, setPreviewStream] = useState<MediaStream>()
     const [framerate, setFramerate] = useState(15)
     const firstRender = useRef(true);
-    const savedPassword = useRef<string>(null)
 
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
@@ -108,7 +107,10 @@ const Stream = () => {
             setRoomName(name);
         }
 
+        let passWasWrong = false;
+
         const onWrongPass = () => {
+            passWasWrong = true;
             setPasswordError(true);
             setShowModal(true);
         }
@@ -117,14 +119,15 @@ const Stream = () => {
         const onAuthRequired = (authNeeded: boolean) => {
             console.log("Auth needed: ", authNeeded)
             if (authNeeded) {
-                if (savedPassword.current != null) {
-                    socket.emit("auth", savedPassword.current)
+                if (localStorage.getItem("password") != null && passWasWrong == false) {
+                    socket.emit("auth", localStorage.getItem("password"))
                     return;
                 }
                 setShowModal(true)
                 return;
             }
 
+            passWasWrong = false;
             setShowModal(false);
             if (joined == false) {
                 joined = true
@@ -226,7 +229,7 @@ const Stream = () => {
                 <div className="form-group">
                     <label htmlFor="passwd">Password</label>
                     <input type="password" placeholder="Server password" value={password} onChange={(ev) => { setPassword(ev.target.value) }} />
-                    <button onClick={() => { socket.emit("auth", password); savedPassword.current = password }}>Start</button>
+                    <button onClick={() => { socket.emit("auth", password); localStorage.setItem("password", password) }}>Start</button>
                 </div>
             </div>
         </div> : ""}
