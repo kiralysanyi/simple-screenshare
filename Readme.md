@@ -24,7 +24,7 @@ name: screenshare
 services:
   server:
     container_name: simple-screenshare
-    image: ghcr.io/kiralysanyi/simple-screenshare:testing # or :latest for a kinda stable version
+    image: ghcr.io/kiralysanyi/simple-screenshare:latest # or :testing for more recent but untested versions
     network_mode: host # yes, i dont like it, but needed because webrtc is allergic to nat
     restart: unless-stopped
     healthcheck:
@@ -48,7 +48,7 @@ name: screenshare
 services:
   server:
     container_name: simple-screenshare
-    image: ghcr.io/kiralysanyi/simple-screenshare:testing # or :latest for a kinda stable version
+    image: ghcr.io/kiralysanyi/simple-screenshare:latest # or :testing for more recent but untested versions
     networks:
       vlan_net:
         ipv4_address: 192.168.1.20
