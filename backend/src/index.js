@@ -65,7 +65,7 @@ const createWorkerAndRouter = async () => {
       mimeType: 'video/VP8',
       clockRate: 90000,
       parameters: {
-        'x-google-start-bitrate': 2000
+        'x-google-start-bitrate': 1000
       }
     },
     {
@@ -73,12 +73,26 @@ const createWorkerAndRouter = async () => {
       mimeType: "video/VP9",
       clockRate: 90000,
       parameters: {
-        'x-google-start-bitrate': 3000
+        'x-google-start-bitrate': 1000,
       }
+    },
+    {
+      kind: 'video',
+      mimeType: 'video/AV1',
+      clockRate: 90000,
+      parameters: {},
+      rtcpFeedback: [
+        { type: 'nack' },
+        { type: 'nack', parameter: 'pli' },
+        { type: 'ccm', parameter: 'fir' },
+        { type: 'goog-remb' },
+        { type: 'transport-cc' },
+      ],
     }
   ];
 
   router = await worker.createRouter({ mediaCodecs });
+
 
   console.log('mediasoup Worker and Router initialized.');
 };
@@ -90,12 +104,8 @@ async function createWebRtcTransport() {
     enableTcp: true,
     preferUdp: true,
     enableSctp: true,
-    enableRtx: true,
     numSctpStreams: { OS: 1024, MIS: 1024 },
-    maxBitrate: 2000_000
   });
-
-
 
   return {
     transport,
@@ -320,9 +330,9 @@ createWorkerAndRouter().then(() => {
 
           const transport = rooms[roomid]["consumers"].get(socket.id);
           if (transport == undefined) {
-           console.error("Transport was undefined, can't set up transport for consumer.");
-           socket.emit("error", "Server: failed to set up transport")
-           return;
+            console.error("Transport was undefined, can't set up transport for consumer.");
+            socket.emit("error", "Server: failed to set up transport")
+            return;
           }
           const consumer = await transport.consume({
             producerId: rooms[roomid]["producer"].id,
