@@ -250,7 +250,9 @@ createWorkerAndRouter().then(() => {
           if (rooms[roomid]["viewers"] > 0) {
             rooms[roomid]["viewers"] -= 1
           }
-          rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
+          if (rooms[roomid]["hostsocket"]) {
+            rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
+          }
           cleanUp();
         })
 
