@@ -269,7 +269,7 @@ const Stream = () => {
             <div className="modal">
                 <h1>Password required to start stream.</h1>
                 {passwordError ? <h2 style={{ color: "red" }}>Wrong password</h2> : ""}
-                <div className="form-group">
+                <div className="form-group" style={{flexDirection: "column"}}>
                     <label htmlFor="passwd">Password</label>
                     <input type="password" placeholder="Server password" value={password} onChange={(ev) => { setPassword(ev.target.value) }} />
                     <button onClick={() => { socket.emit("auth", password); localStorage.setItem("password", password) }}>Start</button>

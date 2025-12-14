@@ -130,14 +130,17 @@ createWorkerAndRouter().then(() => {
       }
 
       if (process.env.HOST_PASS_ENABLE == 1 && socket.authenticated == false && isHost == true) {
-        socket.once("auth", (pass) => {
+        const onAuthHandler = (pass) => {
           if (pass == process.env.HOST_PASS) {
             socket.authenticated = true;
             socket.emit("require_auth", false);
           } else {
             socket.emit("wrongpass")
           }
-        })
+        }
+
+        socket.on("auth", onAuthHandler)
+        socket.once("leaveroom", () => {socket.off("auth", onAuthHandler)})
         socket.emit("require_auth", true)
         return;
       } else {
