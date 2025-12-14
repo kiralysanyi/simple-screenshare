@@ -22,6 +22,8 @@ const Stream = () => {
     const roomID = useParams()["id"];
     const [previewStream, setPreviewStream] = useState<MediaStream>()
     const [framerate, setFramerate] = useState(15)
+    const [codec, setCodec] = useState("VP9")
+    const codecRef = useRef(codec)
     const firstRender = useRef(true);
 
     const [viewers, setViewers] = useState(0);
@@ -58,7 +60,7 @@ const Stream = () => {
                 codec: {
                     preferredPayloadType: 96,
                     kind: 'video',
-                    mimeType: 'video/VP8',
+                    mimeType: 'video/' + codecRef.current,
                     clockRate: 90000,
                     parameters: {
                         'x-google-start-bitrate': 1000
@@ -176,21 +178,23 @@ const Stream = () => {
         }
     }, [])
 
+    const resetStream = async () => {
+        socket.emit("resetStream");
+
+        producerTransportRef.current?.close();
+        codecRef.current = codec;
+        await setupTransport();
+    }
+
 
     useEffect(() => {
-        (async () => {
-            if (firstRender.current == true) {
-                return;
-            }
 
-            socket.emit("resetStream");
+        if (firstRender.current == true) {
+            return;
+        }
 
-            producerTransportRef.current?.close();
-            await setupTransport();
-
-        })()
-
-    }, [framerate])
+        resetStream();
+    }, [framerate, codec])
 
     useEffect(() => {
         firstRender.current = false;
@@ -230,11 +234,22 @@ const Stream = () => {
             <div className="settingsPanel">
                 <h1>{roomName}</h1>
                 <div className="form-group">
+                    <label htmlFor="reset">Reset stream (request new stream from browser)</label>
+                    <button onClick={resetStream}>Reset</button>
+                </div>
+                <div className="form-group">
                     <label htmlFor="fps">Framerate</label>
                     <select name="fps" value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)) }}>
                         <option value={15}>15 (Recommended)</option>
                         <option value={30}>30 (Recommended if you need higher fps)</option>
                         <option value={60}>60 (Experimental, not recommended)</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="codec">Codec</label>
+                    <select name="codec" onChange={(ev) => { setCodec(ev.target.value) }}>
+                        <option value="VP9">VP9 (Recommended)</option>
+                        <option value="VP8">VP8 (Recommended if one of the viewers recieve only blank stream)</option>
                     </select>
                 </div>
                 <div className="form-group">
