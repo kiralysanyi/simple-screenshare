@@ -6,7 +6,7 @@ Simple to use screenshare, easy setup, etc.
 
 - `HOST_PASS_ENABLE=1` enable password protection for starting streams
 - `HOST_PASS="valamijelszo"` the password for authenticating streamers
-- `ANNOUNCED_IP=192.168.1.117` ip to announce for clients (this servers ip, should be accessable from all clients, or else you will get blank video)
+- `ANNOUNCED_IPS=127.0.0.1,192.168.1.165` ips to announce for clients (should be accessable from all clients, or else you will get blank video)
 - `HTTP_PORT=9000` port of the http server
 - `RTC_MIN_PORT=40000` optional RTC min udp port default: 40000
 - `RTC_MAX_PORT=40500` optional RTC max udp port default: 40500
