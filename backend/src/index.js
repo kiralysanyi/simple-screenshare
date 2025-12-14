@@ -310,6 +310,11 @@ createWorkerAndRouter().then(() => {
           }
 
           const transport = rooms[roomid]["consumers"].get(socket.id);
+          if (transport == undefined) {
+           console.error("Transport was undefined, can't set up transport for consumer.");
+           socket.emit("error", "Server: failed to set up transport")
+           return;
+          }
           const consumer = await transport.consume({
             producerId: rooms[roomid]["producer"].id,
             rtpCapabilities,
