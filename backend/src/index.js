@@ -51,20 +51,20 @@ const createWorkerAndRouter = async () => {
 
   // 2. Create a Router
   const mediaCodecs = [
-    {
+    /*{
       kind: 'video',
       mimeType: 'video/VP8',
       clockRate: 90000,
       parameters: {
-        'x-google-start-bitrate': 1000
+        'x-google-start-bitrate': 2000
       }
-    },
+    }*/
     {
       kind: 'video',
-      mimeType: 'video/VP9',
+      mimeType: "video/VP9",
       clockRate: 90000,
       parameters: {
-        'x-google-start-bitrate': 1000
+        'x-google-start-bitrate': 3000
       }
     }
   ];
@@ -250,7 +250,9 @@ createWorkerAndRouter().then(() => {
           if (rooms[roomid]["viewers"] > 0) {
             rooms[roomid]["viewers"] -= 1
           }
-          rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
+          if (rooms[roomid]["hostsocket"]) {
+            rooms[roomid]["hostsocket"].emit("viewcount", rooms[roomid]["viewers"]);
+          }
           cleanUp();
         })
 
