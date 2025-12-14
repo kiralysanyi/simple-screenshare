@@ -140,7 +140,7 @@ createWorkerAndRouter().then(() => {
         }
 
         socket.on("auth", onAuthHandler)
-        socket.once("leaveroom", () => {socket.off("auth", onAuthHandler)})
+        socket.once("leaveroom", () => { socket.off("auth", onAuthHandler) })
         socket.emit("require_auth", true)
         return;
       } else {
@@ -391,10 +391,15 @@ createWorkerAndRouter().then(() => {
             socket.emit("error", "Failed to add producer to room: room not found")
             return;
           }
-          rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
-          cb({ id: rooms[roomid]["producer"].id });
-          console.log("Ready to view", roomid, new Date().toLocaleTimeString())
-          io.to(roomid).emit("ready2view", "")
+          try {
+            rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
+            cb({ id: rooms[roomid]["producer"].id });
+            console.log("Ready to view", roomid, new Date().toLocaleTimeString())
+            io.to(roomid).emit("ready2view", "")
+          } catch (error) {
+            socket.emit("error", "Server: failed to set up rtp transport")
+            console.error(error)
+          }
         }
 
         // ===========================
