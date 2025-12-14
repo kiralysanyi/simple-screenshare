@@ -4,9 +4,18 @@ const fs = require("fs")
 const path = require("path");
 require('dotenv').config();
 
-if (process.env.ANNOUNCED_IP == undefined) {
-  console.error("ANNOUNCED_IP env variable is not defined")
+if (process.env.ANNOUNCED_IPS == undefined) {
+  console.error("ANNOUNCED_IPS env variable is not defined")
   process.exit(69)
+}
+
+const ANNOUNCED_IPS = process.env.ANNOUNCED_IPS.split(",");
+let listenIps = [];
+for (let i in ANNOUNCED_IPS) {
+  listenIps.push({
+    ip: "0.0.0.0",
+    announcedIp: ANNOUNCED_IPS[i]
+  })
 }
 
 const app = express();
@@ -76,7 +85,7 @@ const createWorkerAndRouter = async () => {
 
 async function createWebRtcTransport() {
   const transport = await router.createWebRtcTransport({
-    listenIps: [{ ip: "0.0.0.0", announcedIp: process.env.ANNOUNCED_IP }],
+    listenIps: listenIps,
     enableUdp: true,
     enableTcp: true,
     preferUdp: true,
