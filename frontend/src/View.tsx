@@ -6,7 +6,7 @@ import { useParams } from "react-router";
 import StreamViewer from "./StreamViewer";
 import "./css/view.css"
 import StatusIndicator from "./StatusIndicator";
-import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon } from "@heroicons/react/24/solid";
+import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 
 
 const View = () => {
@@ -51,7 +51,8 @@ const View = () => {
                         if (
                             statName !== "id" &&
                             statName !== "timestamp" &&
-                            statName !== "type"
+                            statName !== "type" &&
+                            statName !== "base64Certificate"
                         ) {
                             statsArray.push(`${statName}: ${report[statName]}`)
                         }
@@ -207,7 +208,7 @@ const View = () => {
                 {isFullscreen ? <ArrowsPointingInIcon color="white" width={32} height={32} /> : <ArrowsPointingOutIcon color="white" width={32} height={32} />}
             </div>
             <div className="btn" onClick={() => { setShowStats(!showStats) }}>
-                <InformationCircleIcon width={32} height={32} />
+                {showStats ? <XCircleIcon width={32} height={32} color="red"/> : <InformationCircleIcon width={32} height={32} />}
             </div>
         </div>
         <StatusIndicator message={statusMessage} status={status} />
