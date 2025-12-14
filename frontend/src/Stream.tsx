@@ -5,7 +5,7 @@ import socket from "./Socket";
 import { useParams } from "react-router";
 import getStream from "./utils/getStream";
 import { Device } from "mediasoup-client";
-import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
+import type { AppData, ProducerOptions, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
 import StreamViewer from "./StreamViewer";
 import "./css/streamer.css"
 
@@ -55,18 +55,76 @@ const Stream = () => {
                 socket.emit("produce", { kind, rtpParameters }, cb);
             });
 
-            await producerTransport.produce({
-                track: videoTrack,
-                codec: {
-                    preferredPayloadType: 96,
-                    kind: 'video',
-                    mimeType: 'video/' + codecRef.current,
-                    clockRate: 90000,
-                    parameters: {
-                        'x-google-start-bitrate': 1000
+            let options: ProducerOptions;
+            switch (codecRef.current) {
+                case "VP9":
+                    options = {
+                        track: videoTrack,
+                        codec: {
+                            preferredPayloadType: 96,
+                            kind: 'video',
+                            mimeType: 'video/VP9',
+                            clockRate: 90000,
+                            parameters: {
+                                'x-google-start-bitrate': 1000,
+                            },
+                        }
                     }
-                }
-            });
+                    break;
+
+                case "VP8":
+                    options = {
+                        track: videoTrack,
+                        codec: {
+                            preferredPayloadType: 96,
+                            kind: 'video',
+                            mimeType: 'video/VP8',
+                            clockRate: 90000,
+                            parameters: {
+                                'x-google-start-bitrate': 1000,
+                            },
+                        }
+                    }
+                    break;
+
+                case "AV1":
+                    options = {
+                        track: videoTrack,
+                        codec: {
+                            preferredPayloadType: 96,
+                            kind: 'video',
+                            mimeType: 'video/AV1',
+                            clockRate: 90000,
+                            parameters: {},
+                            rtcpFeedback: [
+                                { type: 'nack' },
+                                { type: 'nack', parameter: 'pli' },
+                                { type: 'ccm', parameter: 'fir' },
+                                { type: 'goog-remb' },
+                                { type: 'transport-cc' },
+                            ],
+                        }
+                    }
+                    break;
+
+                default:
+                    console.log("Defaulted back to VP9")
+                    options = {
+                        track: videoTrack,
+                        codec: {
+                            preferredPayloadType: 96,
+                            kind: 'video',
+                            mimeType: 'video/VP9',
+                            clockRate: 90000,
+                            parameters: {
+                                'x-google-start-bitrate': 1000,
+                            },
+                        }
+                    }
+                    break;
+            }
+
+            await producerTransport.produce(options);
         })
     }, [framerate])
 
@@ -250,6 +308,7 @@ const Stream = () => {
                     <select name="codec" onChange={(ev) => { setCodec(ev.target.value) }}>
                         <option value="VP9">VP9 (Recommended)</option>
                         <option value="VP8">VP8 (Recommended if one of the viewers recieve only blank stream)</option>
+                        <option value="AV1">AV1</option>
                     </select>
                 </div>
                 <div className="form-group">
@@ -269,7 +328,7 @@ const Stream = () => {
             <div className="modal">
                 <h1>Password required to start stream.</h1>
                 {passwordError ? <h2 style={{ color: "red" }}>Wrong password</h2> : ""}
-                <div className="form-group" style={{flexDirection: "column"}}>
+                <div className="form-group" style={{ flexDirection: "column" }}>
                     <label htmlFor="passwd">Password</label>
                     <input type="password" placeholder="Server password" value={password} onChange={(ev) => { setPassword(ev.target.value) }} />
                     <button onClick={() => { socket.emit("auth", password); localStorage.setItem("password", password) }}>Start</button>
