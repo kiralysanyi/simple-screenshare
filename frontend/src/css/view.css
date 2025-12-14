@@ -15,6 +15,9 @@
     backdrop-filter: blur(8px);
     border-radius: 1rem;
     transition: 200ms;
+    display: flex;
+    flex-direction: row;
+    gap: 0.5rem;
 }
 
 .controls .btn {
@@ -33,4 +36,20 @@
 
 .hidden {
     opacity: 0;
+}
+
+.statsDisplay {
+    position: fixed;
+    z-index: 100;
+    top: 16px;
+    left: 50%;
+    transform: translate(-50%, 0%);
+    background-color: rgba(0, 0, 0, 0.5);
+    max-width: 80dvw;
+    max-height: 80dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    color: white;
+    overflow: auto;
 }

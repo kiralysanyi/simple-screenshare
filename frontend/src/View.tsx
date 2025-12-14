@@ -6,7 +6,7 @@ import { useParams } from "react-router";
 import StreamViewer from "./StreamViewer";
 import "./css/view.css"
 import StatusIndicator from "./StatusIndicator";
-import { ArrowsPointingInIcon, ArrowsPointingOutIcon } from "@heroicons/react/24/solid";
+import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon } from "@heroicons/react/24/solid";
 
 
 const View = () => {
@@ -15,7 +15,9 @@ const View = () => {
     const roomID = useParams()["id"];
     const [roomFull, setRoomFull] = useState(false);
     const [status, setStatus] = useState<"ok" | "loading" | "error">("loading");
-    const [statusMessage, setStatusMessage] = useState("Loading")
+    const [statusMessage, setStatusMessage] = useState("Loading");
+    const [showStats, setShowStats] = useState(false);
+    const [rtpStats, setRtpStats] = useState<Array<string>>([]);
 
     useEffect(() => {
         let isFirstLaunch = true;
@@ -39,6 +41,25 @@ const View = () => {
 
         let device: Device;
         let consumerTransport: Transport;
+
+        const getStatsInterval = setInterval(async () => {
+            if (consumerTransport) {
+                const stats = await consumerTransport.getStats();
+                const statsArray: Array<string> = [];
+                stats.forEach((report) => {
+                    Object.keys(report).forEach((statName) => {
+                        if (
+                            statName !== "id" &&
+                            statName !== "timestamp" &&
+                            statName !== "type"
+                        ) {
+                            statsArray.push(`${statName}: ${report[statName]}`)
+                        }
+                    })
+                })
+                setRtpStats(statsArray)
+            }
+        }, 1000);
 
 
         async function startConsuming(capabilities: RtpCapabilities) {
@@ -76,6 +97,7 @@ const View = () => {
                         rtpParameters: data.rtpParameters,
 
                     });
+
 
                     console.log("Setting stream")
 
@@ -123,6 +145,7 @@ const View = () => {
         socket.emit("joinroom", roomID, false)
 
         return () => {
+            clearInterval(getStatsInterval)
             socket.off("room_full", onRoomFull)
             socket.off("routerRtpCapabilities", rtpHandler)
             socket.off("connect", onConnected);
@@ -183,8 +206,14 @@ const View = () => {
             <div className="btn" onClick={toggleFullscreen}>
                 {isFullscreen ? <ArrowsPointingInIcon color="white" width={32} height={32} /> : <ArrowsPointingOutIcon color="white" width={32} height={32} />}
             </div>
+            <div className="btn" onClick={() => { setShowStats(!showStats) }}>
+                <InformationCircleIcon width={32} height={32} />
+            </div>
         </div>
         <StatusIndicator message={statusMessage} status={status} />
+        {showStats ? <div className="statsDisplay">
+            {rtpStats.map((stat) => <span>{stat}</span>)}
+        </div> : ""}
     </>
 }
 

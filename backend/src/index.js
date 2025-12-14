@@ -56,15 +56,7 @@ const createWorkerAndRouter = async () => {
       mimeType: 'video/VP8',
       clockRate: 90000,
       parameters: {
-        'x-google-start-bitrate': 1000
-      }
-    },
-    {
-      kind: 'video',
-      mimeType: 'video/VP9',
-      clockRate: 90000,
-      parameters: {
-        'x-google-start-bitrate': 1000
+        'x-google-start-bitrate': 2000
       }
     }
   ];
