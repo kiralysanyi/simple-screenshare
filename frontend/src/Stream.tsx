@@ -29,6 +29,7 @@ const Stream = () => {
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
     const [viewerLimit, setViewerLimit] = useState(20);
+    const [rtcConnectionState, setRtcConnectionState] = useState("connecting")
 
 
     const setupTransport = useCallback(async () => {
@@ -54,6 +55,10 @@ const Stream = () => {
             producerTransport.on("produce", ({ kind, rtpParameters }, cb) => {
                 socket.emit("produce", { kind, rtpParameters }, cb);
             });
+
+            producerTransport.on("connectionstatechange", (state) => {
+                setRtcConnectionState(state)
+            })
 
             let options: ProducerOptions;
             switch (codecRef.current) {
@@ -276,7 +281,19 @@ const Stream = () => {
             {/* Video preview */}
             <div className="infoPanel">
                 {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
-                <span>Connected: {isConnected ? "yes" : "no"}</span>
+                <span>Socket connection: {isConnected ? "Connected" : "Disconnected"}</span>
+                <span>Rtc connection state: <span className={
+                    `${
+                        rtcConnectionState == "connecting"? "loading": ""
+                    }
+                    ${
+                        rtcConnectionState == "failed"? "error": ""
+                    }
+                    ${
+                        rtcConnectionState == "connected"? "ok": ""
+                    }
+                    `
+                    }>{rtcConnectionState}</span></span>
                 <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
                 <h2>Invite link</h2>
                 <span>Click to copy</span>

@@ -81,6 +81,38 @@ const View = () => {
                     socket.emit("connectConsumerTransport", { dtlsParameters }, cb);
                 });
 
+                consumerTransport.on("connectionstatechange", (state) => {
+                    switch (state) {
+                        case "connecting":
+                            setStatus("loading")
+                            setStatusMessage("Connecting")
+                            break;
+
+                        case "failed":
+                            setStatus("error")
+                            setStatusMessage("Webrtc connection failed")
+                            break;
+
+                        case "closed":
+                            setStatus("error")
+                            setStatusMessage("Webrtc connection closed")
+                            break;
+                        
+                        case "connected":
+                            setStatus("ok")
+                            setStatusMessage("Webrtc connected")
+                            break;
+
+                        case "disconnected":
+                            setStatus("error")
+                            setStatusMessage("Webrtc disconnected")
+                            break;
+                    
+                        default:
+                            break;
+                    }
+                })
+
                 socket.emit("consume", { rtpCapabilities: device.rtpCapabilities }, async (data: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
                     if (data.error) {
                         console.error(data.error)
@@ -208,7 +240,7 @@ const View = () => {
                 {isFullscreen ? <ArrowsPointingInIcon color="white" width={32} height={32} /> : <ArrowsPointingOutIcon color="white" width={32} height={32} />}
             </div>
             <div className="btn" onClick={() => { setShowStats(!showStats) }}>
-                {showStats ? <XCircleIcon width={32} height={32} color="red"/> : <InformationCircleIcon width={32} height={32} />}
+                {showStats ? <XCircleIcon width={32} height={32} color="red" /> : <InformationCircleIcon width={32} height={32} />}
             </div>
         </div>
         <StatusIndicator message={statusMessage} status={status} />
