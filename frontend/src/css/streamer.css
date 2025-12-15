@@ -34,6 +34,9 @@
     user-select: none;
     cursor: copy;
     transition: 200ms;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .inviteLink:hover {
