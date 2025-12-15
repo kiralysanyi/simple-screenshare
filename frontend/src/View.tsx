@@ -241,6 +241,22 @@ const View = () => {
         }
     }
 
+    // wakelock
+
+    useEffect(() => {
+        let wakelock: WakeLockSentinel | undefined;
+
+        navigator.wakeLock.request().then((wl) => {
+            wakelock = wl;
+        })
+
+        return () => {
+            if (wakelock) {
+                wakelock.release();
+            }
+        }
+    }, [])
+
     return <>
         {stream ? <StreamViewer className="streamView" stream={stream} /> : ""}
         {roomFull ? <div className="modal_bg"><div className="modal">
