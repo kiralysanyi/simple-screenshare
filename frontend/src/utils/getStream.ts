@@ -12,8 +12,8 @@ const captureScreen = async (framerate: number = 15, width?: number, height?: nu
 
         return stream;
     } catch (err) {
-        return new MediaStream();
         console.error("User hates permissions or something failed:", err);
+        return new MediaStream();
     }
 }
 

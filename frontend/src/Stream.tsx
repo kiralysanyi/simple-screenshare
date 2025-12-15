@@ -23,9 +23,7 @@ const Stream = () => {
     const [previewStream, setPreviewStream] = useState<MediaStream>()
     const [framerate, setFramerate] = useState(15)
     const [codec, setCodec] = useState("VP9")
-    const codecRef = useRef(codec)
     const firstRender = useRef(true);
-
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
     const [viewerLimit, setViewerLimit] = useState(20);
@@ -61,7 +59,7 @@ const Stream = () => {
             })
 
             let options: ProducerOptions;
-            switch (codecRef.current) {
+            switch (codec) {
                 case "VP9":
                     options = {
                         track: videoTrack,
@@ -131,7 +129,7 @@ const Stream = () => {
 
             await producerTransport.produce(options);
         })
-    }, [framerate])
+    }, [framerate, codec])
 
     useEffect(() => {
         let joined = false;
@@ -160,7 +158,7 @@ const Stream = () => {
             await device.load({ routerRtpCapabilities: capabilities })
             console.log("Loaded rtp capabilities of server")
 
-            setupTransport();
+            console.log("Ready to start")
 
         }
 
@@ -241,12 +239,26 @@ const Stream = () => {
         }
     }, [])
 
+    const [streamStarted, setStreamStarted] = useState(false);
+
     const resetStream = async () => {
         socket.emit("resetStream");
 
         producerTransportRef.current?.close();
-        codecRef.current = codec;
         await setupTransport();
+    }
+
+    const stopStreaming = () => {
+        socket.emit("resetStream");
+        producerTransportRef.current?.close();
+        setStreamStarted(false);
+    }
+
+    const startStreaming = () => {
+        if (producerTransportRef.current == undefined || producerTransportRef.current?.closed == true) {
+            setupTransport();
+            setStreamStarted(true);
+        }
     }
 
 
@@ -256,13 +268,14 @@ const Stream = () => {
             return;
         }
 
-        resetStream();
+        if (streamStarted == true) {
+            resetStream();
+        }
     }, [framerate, codec])
 
     useEffect(() => {
         firstRender.current = false;
     })
-
 
     const [newRoomName, setNewRoomName] = useState(roomName);
     const [linkGreen, setLinkGreen] = useState(false);
@@ -283,17 +296,14 @@ const Stream = () => {
                 {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
                 <span>Socket connection: {isConnected ? "Connected" : "Disconnected"}</span>
                 <span>Rtc connection state: <span className={
-                    `${
-                        rtcConnectionState == "connecting"? "loading": ""
+                    `${rtcConnectionState == "connecting" ? "loading" : ""
                     }
-                    ${
-                        rtcConnectionState == "failed"? "error": ""
+                    ${rtcConnectionState == "failed" ? "error" : ""
                     }
-                    ${
-                        rtcConnectionState == "connected"? "ok": ""
+                    ${rtcConnectionState == "connected" ? "ok" : ""
                     }
                     `
-                    }>{rtcConnectionState}</span></span>
+                }>{rtcConnectionState}</span></span>
                 <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
                 <h2>Invite link</h2>
                 <span>Click to copy</span>
@@ -309,12 +319,13 @@ const Stream = () => {
             <div className="settingsPanel">
                 <h1>{roomName}</h1>
                 <div className="form-group">
-                    <label htmlFor="reset">Reset stream (request new stream from browser)</label>
+                    <button onClick={startStreaming} disabled={streamStarted}>Start</button>
                     <button onClick={resetStream}>Reset</button>
+                    <button onClick={stopStreaming} disabled={!streamStarted}>Stop</button>
                 </div>
                 <div className="form-group">
                     <label htmlFor="fps">Framerate</label>
-                    <select name="fps" value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)) }}>
+                    <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)) }}>
                         <option value={15}>15 (Recommended)</option>
                         <option value={30}>30 (Recommended if you need higher fps)</option>
                         <option value={60}>60 (Experimental, not recommended)</option>
@@ -322,7 +333,7 @@ const Stream = () => {
                 </div>
                 <div className="form-group">
                     <label htmlFor="codec">Codec</label>
-                    <select name="codec" onChange={(ev) => { setCodec(ev.target.value) }}>
+                    <select name="codec" disabled={streamStarted} onChange={(ev) => { setCodec(ev.target.value) }}>
                         <option value="VP9">VP9 (Recommended)</option>
                         <option value="VP8">VP8 (Recommended if one of the viewers recieve only blank stream)</option>
                         <option value="AV1">AV1</option>

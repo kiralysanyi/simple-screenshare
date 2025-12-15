@@ -232,7 +232,7 @@ createWorkerAndRouter().then(() => {
         })
 
         socket.on("resetStream", () => {
-          io.to(roomid).emit("hostleft")
+          io.to(roomid).emit("resetStream")
           console.log("Host reset at: ", new Date().toLocaleTimeString())
         })
 
