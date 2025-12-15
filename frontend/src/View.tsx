@@ -97,7 +97,7 @@ const View = () => {
                             setStatus("error")
                             setStatusMessage("Webrtc connection closed")
                             break;
-                        
+
                         case "connected":
                             setStatus("ok")
                             setStatusMessage("Webrtc connected")
@@ -107,7 +107,7 @@ const View = () => {
                             setStatus("error")
                             setStatusMessage("Webrtc disconnected")
                             break;
-                    
+
                         default:
                             break;
                     }
@@ -159,7 +159,17 @@ const View = () => {
             setStatusMessage("Host left, waiting for stream")
             socket.emit("reset")
         }
-        socket.on("hostleft", onHostLeft)
+
+        const onResetStream = () => {
+            consuming = false;
+            console.log("Resetting stream");
+            setStatus("loading");
+            setStatusMessage("Waiting for stream")
+            socket.emit("reset")
+        }
+
+        socket.on("hostleft", onHostLeft);
+        socket.on("resetStream", onResetStream);
 
         socket.on("ready2view", () => {
             setStatus("loading");
@@ -179,6 +189,7 @@ const View = () => {
 
         return () => {
             clearInterval(getStatsInterval)
+            socket.off("resetStream", onResetStream);
             socket.off("room_full", onRoomFull)
             socket.off("routerRtpCapabilities", rtpHandler)
             socket.off("connect", onConnected);
