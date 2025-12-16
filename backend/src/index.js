@@ -232,6 +232,7 @@ createWorkerAndRouter().then(() => {
         })
 
         socket.on("resetStream", () => {
+          rooms[roomid]["producer"] = undefined
           io.to(roomid).emit("resetStream")
           console.log("Host reset at: ", new Date().toLocaleTimeString())
         })
