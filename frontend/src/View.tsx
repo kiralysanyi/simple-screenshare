@@ -91,6 +91,7 @@ const View = () => {
 
                         case "failed":
                             setStatus("error")
+                            consumerTransport.removeAllListeners();
                             setStatusMessage("Webrtc connection failed")
                             break;
 
