@@ -81,6 +81,7 @@ const Stream = () => {
                             setRtcConnectionState("Restoring connection")
                             socket.emit("resetStream");
                             setupTransport();
+                            producerTransport.removeAllListeners()
                             clearInterval(retryInterval);
                         }
                     }, 1000);
