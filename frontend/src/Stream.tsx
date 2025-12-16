@@ -27,7 +27,7 @@ const Stream = () => {
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
     const [viewerLimit, setViewerLimit] = useState(20);
-    const [rtcConnectionState, setRtcConnectionState] = useState("connecting")
+    const [rtcConnectionState, setRtcConnectionState] = useState("disconnected")
 
 
     const setupTransport = useCallback(async () => {
@@ -41,6 +41,19 @@ const Stream = () => {
         const stream = await getStream(framerate); // first param is framerate
         setPreviewStream(stream);
         const videoTrack = stream?.getVideoTracks()[0];
+
+        const onEnded = () => {
+            console.log("Ended stream by browser");
+            setRtcConnectionState("disconnected")
+            setStreamStarted(false);
+            socket.emit("resetStream");
+            producerTransportRef.current?.close();
+        }
+        videoTrack?.addEventListener("ended", onEnded)
+        console.log(videoTrack)
+        if (videoTrack) {
+            console.log("Added end listener to track: ", videoTrack)
+        }
 
         socket.emit("createProducerTransport", {}, async (params: TransportOptions<AppData>) => {
             let producerTransport = device.createSendTransport(params);
@@ -301,6 +314,8 @@ const Stream = () => {
                     ${rtcConnectionState == "failed" ? "error" : ""
                     }
                     ${rtcConnectionState == "connected" ? "ok" : ""
+                    }
+                    ${rtcConnectionState == "disconnected" ? "error" : ""
                     }
                     `
                 }>{rtcConnectionState}</span></span>
