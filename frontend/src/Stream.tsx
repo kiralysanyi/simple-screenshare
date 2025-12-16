@@ -73,11 +73,18 @@ const Stream = () => {
                 console.log("State: ", state)
                 setRtcConnectionState(state)
                 // retry if failed
-                if (state == "failed" && streamingRef.current == true) {
-                    console.log("Retrying");
-                    setRtcConnectionState("Restoring connection")
-                    socket.emit("resetStream");
-                    setupTransport();
+                if (state == "failed") {
+                    const retryInterval = setInterval(() => {
+                        console.log(state, streamingRef.current, socket.connected)
+                        if (state == "failed" && streamingRef.current == true && socket.connected) {
+                            console.log("Retrying");
+                            setRtcConnectionState("Restoring connection")
+                            socket.emit("resetStream");
+                            setupTransport();
+                            producerTransport.removeAllListeners()
+                            clearInterval(retryInterval);
+                        }
+                    }, 1000);
                 }
             })
 
@@ -329,7 +336,7 @@ const Stream = () => {
                     }
                     ${rtcConnectionState == "disconnected" ? "error" : ""
                     }
-                    ${rtcConnectionState == "Restoring connection"? "error": ""}
+                    ${rtcConnectionState == "Restoring connection" ? "error" : ""}
                     `
                 }>{rtcConnectionState}</span></span>
                 <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
