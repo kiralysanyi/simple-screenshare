@@ -88,7 +88,24 @@ const createWorkerAndRouter = async () => {
         { type: 'goog-remb' },
         { type: 'transport-cc' },
       ],
-    }
+    },
+    {
+      kind: 'video',
+      mimeType: 'video/H264',
+      clockRate: 90000,
+      parameters: {
+        'packetization-mode': 1,
+        'profile-level-id': '42e01f',
+        'level-asymmetry-allowed': 1
+      },
+      rtcpFeedback: [
+        { type: 'nack' },
+        { type: 'nack', parameter: 'pli' },
+        { type: 'ccm', parameter: 'fir' },
+        { type: 'goog-remb' },
+        { type: 'transport-cc' }
+      ]
+    },
   ];
 
   router = await worker.createRouter({ mediaCodecs });
@@ -232,6 +249,7 @@ createWorkerAndRouter().then(() => {
         })
 
         socket.on("resetStream", () => {
+          rooms[roomid]["producer"] = undefined
           io.to(roomid).emit("resetStream")
           console.log("Host reset at: ", new Date().toLocaleTimeString())
         })

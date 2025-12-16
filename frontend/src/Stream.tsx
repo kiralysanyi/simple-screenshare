@@ -27,7 +27,8 @@ const Stream = () => {
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
     const [viewerLimit, setViewerLimit] = useState(20);
-    const [rtcConnectionState, setRtcConnectionState] = useState("connecting")
+    const [rtcConnectionState, setRtcConnectionState] = useState("disconnected");
+    const streamingRef = useRef(false);
 
 
     const setupTransport = useCallback(async () => {
@@ -42,6 +43,20 @@ const Stream = () => {
         setPreviewStream(stream);
         const videoTrack = stream?.getVideoTracks()[0];
 
+        const onEnded = () => {
+            console.log("Ended stream by browser");
+            setRtcConnectionState("disconnected")
+            setStreamStarted(false);
+            streamingRef.current = false;
+            socket.emit("resetStream");
+            producerTransportRef.current?.close();
+        }
+        videoTrack?.addEventListener("ended", onEnded)
+        console.log(videoTrack)
+        if (videoTrack) {
+            console.log("Added end listener to track: ", videoTrack)
+        }
+
         socket.emit("createProducerTransport", {}, async (params: TransportOptions<AppData>) => {
             let producerTransport = device.createSendTransport(params);
             producerTransportRef.current = producerTransport;
@@ -55,7 +70,22 @@ const Stream = () => {
             });
 
             producerTransport.on("connectionstatechange", (state) => {
+                console.log("State: ", state)
                 setRtcConnectionState(state)
+                // retry if failed
+                if (state == "failed") {
+                    const retryInterval = setInterval(() => {
+                        console.log(state, streamingRef.current, socket.connected)
+                        if (state == "failed" && streamingRef.current == true && socket.connected) {
+                            console.log("Retrying");
+                            setRtcConnectionState("Restoring connection")
+                            socket.emit("resetStream");
+                            setupTransport();
+                            producerTransport.removeAllListeners()
+                            clearInterval(retryInterval);
+                        }
+                    }, 1000);
+                }
             })
 
             let options: ProducerOptions;
@@ -106,6 +136,30 @@ const Stream = () => {
                                 { type: 'goog-remb' },
                                 { type: 'transport-cc' },
                             ],
+                        }
+                    }
+                    break;
+
+                case "H264":
+                    options = {
+                        track: videoTrack,
+                        codec: {
+                            preferredPayloadType: 96,
+                            kind: 'video',
+                            mimeType: 'video/H264',
+                            clockRate: 90000,
+                            parameters: {
+                                'packetization-mode': 1,
+                                'profile-level-id': '42e01f',
+                                'level-asymmetry-allowed': 1
+                            },
+                            rtcpFeedback: [
+                                { type: 'nack' },
+                                { type: 'nack', parameter: 'pli' },
+                                { type: 'ccm', parameter: 'fir' },
+                                { type: 'goog-remb' },
+                                { type: 'transport-cc' }
+                            ]
                         }
                     }
                     break;
@@ -252,12 +306,14 @@ const Stream = () => {
         socket.emit("resetStream");
         producerTransportRef.current?.close();
         setStreamStarted(false);
+        streamingRef.current = false;
     }
 
     const startStreaming = () => {
         if (producerTransportRef.current == undefined || producerTransportRef.current?.closed == true) {
             setupTransport();
             setStreamStarted(true);
+            streamingRef.current = true;
         }
     }
 
@@ -289,6 +345,23 @@ const Stream = () => {
         socket.emit("setlimit", newLimit);
     }
 
+    //load saved config
+
+    useEffect(() => {
+        const savedFramerate = localStorage.getItem("framerate");
+        let savedCodec = localStorage.getItem("codec");
+
+        console.log("Loading: ", savedFramerate, savedCodec)
+
+        if (savedCodec != "H264" && savedCodec != "VP8" && savedCodec != "VP9" && savedCodec != "AV1") {
+            console.log("Invalid codec in config: ", savedCodec)
+            savedCodec = "VP9"
+        }
+
+        savedFramerate ? setFramerate(parseInt(savedFramerate)) : null;
+        savedCodec ? setCodec(savedCodec) : null;
+    }, [])
+
     return <>
         <div className="streamHostContainer">
             {/* Video preview */}
@@ -302,6 +375,9 @@ const Stream = () => {
                     }
                     ${rtcConnectionState == "connected" ? "ok" : ""
                     }
+                    ${rtcConnectionState == "disconnected" ? "error" : ""
+                    }
+                    ${rtcConnectionState == "Restoring connection" ? "error" : ""}
                     `
                 }>{rtcConnectionState}</span></span>
                 <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
@@ -325,7 +401,7 @@ const Stream = () => {
                 </div>
                 <div className="form-group">
                     <label htmlFor="fps">Framerate</label>
-                    <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)) }}>
+                    <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)); localStorage.setItem("framerate", ev.target.value) }}>
                         <option value={15}>15 (Recommended)</option>
                         <option value={30}>30 (Recommended if you need higher fps)</option>
                         <option value={60}>60 (Experimental, not recommended)</option>
@@ -333,10 +409,11 @@ const Stream = () => {
                 </div>
                 <div className="form-group">
                     <label htmlFor="codec">Codec</label>
-                    <select name="codec" disabled={streamStarted} onChange={(ev) => { setCodec(ev.target.value) }}>
+                    <select name="codec" value={codec} disabled={streamStarted} onChange={(ev) => { setCodec(ev.target.value); localStorage.setItem("codec", ev.target.value); }}>
                         <option value="VP9">VP9 (Recommended)</option>
-                        <option value="VP8">VP8 (Recommended if one of the viewers recieve only blank stream)</option>
+                        <option value="VP8">VP8</option>
                         <option value="AV1">AV1</option>
+                        <option value="H264">H264</option>
                     </select>
                 </div>
                 <div className="form-group">

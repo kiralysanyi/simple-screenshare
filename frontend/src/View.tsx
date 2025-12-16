@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import socket from "./Socket";
 import { Device } from "mediasoup-client";
 import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
@@ -18,9 +18,10 @@ const View = () => {
     const [statusMessage, setStatusMessage] = useState("Loading");
     const [showStats, setShowStats] = useState(false);
     const [rtpStats, setRtpStats] = useState<Array<string>>([]);
+    const firstLaunchRef = useRef(true);
 
     useEffect(() => {
-        let isFirstLaunch = true;
+        let isFirstLaunch = firstLaunchRef.current;
         let rtpCapabilities: RtpCapabilities;
 
         const onConnected = () => {
@@ -90,6 +91,7 @@ const View = () => {
 
                         case "failed":
                             setStatus("error")
+                            consumerTransport.removeAllListeners();
                             setStatusMessage("Webrtc connection failed")
                             break;
 
@@ -144,6 +146,7 @@ const View = () => {
 
         const rtpHandler = (capabilities: RtpCapabilities) => {
             isFirstLaunch = false;
+            firstLaunchRef.current = isFirstLaunch;
             rtpCapabilities = capabilities;
         }
 
@@ -195,8 +198,9 @@ const View = () => {
             socket.off("connect", onConnected);
             socket.off("disconnect", onDisconnected);
             socket.off("hostleft", onHostLeft);
-            socket.off("ready2view", startConsuming)
-            socket.emit("leaveroom")
+            socket.off("ready2view", startConsuming);
+            socket.emit("leaveroom");
+            consumerTransport?.removeAllListeners();
         }
     }, [])
 
