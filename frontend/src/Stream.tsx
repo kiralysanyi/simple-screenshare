@@ -27,7 +27,8 @@ const Stream = () => {
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
     const [viewerLimit, setViewerLimit] = useState(20);
-    const [rtcConnectionState, setRtcConnectionState] = useState("disconnected")
+    const [rtcConnectionState, setRtcConnectionState] = useState("disconnected");
+    const streamingRef = useRef(false);
 
 
     const setupTransport = useCallback(async () => {
@@ -46,6 +47,7 @@ const Stream = () => {
             console.log("Ended stream by browser");
             setRtcConnectionState("disconnected")
             setStreamStarted(false);
+            streamingRef.current = false;
             socket.emit("resetStream");
             producerTransportRef.current?.close();
         }
@@ -68,7 +70,15 @@ const Stream = () => {
             });
 
             producerTransport.on("connectionstatechange", (state) => {
+                console.log("State: ", state)
                 setRtcConnectionState(state)
+                // retry if failed
+                if (state == "failed" && streamingRef.current == true) {
+                    console.log("Retrying");
+                    setRtcConnectionState("Restoring connection")
+                    socket.emit("resetStream");
+                    setupTransport();
+                }
             })
 
             let options: ProducerOptions;
@@ -265,12 +275,14 @@ const Stream = () => {
         socket.emit("resetStream");
         producerTransportRef.current?.close();
         setStreamStarted(false);
+        streamingRef.current = false;
     }
 
     const startStreaming = () => {
         if (producerTransportRef.current == undefined || producerTransportRef.current?.closed == true) {
             setupTransport();
             setStreamStarted(true);
+            streamingRef.current = true;
         }
     }
 
@@ -317,6 +329,7 @@ const Stream = () => {
                     }
                     ${rtcConnectionState == "disconnected" ? "error" : ""
                     }
+                    ${rtcConnectionState == "Restoring connection"? "error": ""}
                     `
                 }>{rtcConnectionState}</span></span>
                 <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
