@@ -140,6 +140,30 @@ const Stream = () => {
                     }
                     break;
 
+                case "H264":
+                    options = {
+                        track: videoTrack,
+                        codec: {
+                            preferredPayloadType: 96,
+                            kind: 'video',
+                            mimeType: 'video/H264',
+                            clockRate: 90000,
+                            parameters: {
+                                'packetization-mode': 1,
+                                'profile-level-id': '42e01f',
+                                'level-asymmetry-allowed': 1
+                            },
+                            rtcpFeedback: [
+                                { type: 'nack' },
+                                { type: 'nack', parameter: 'pli' },
+                                { type: 'ccm', parameter: 'fir' },
+                                { type: 'goog-remb' },
+                                { type: 'transport-cc' }
+                            ]
+                        }
+                    }
+                    break;
+
                 default:
                     console.log("Defaulted back to VP9")
                     options = {
@@ -321,6 +345,23 @@ const Stream = () => {
         socket.emit("setlimit", newLimit);
     }
 
+    //load saved config
+
+    useEffect(() => {
+        const savedFramerate = localStorage.getItem("framerate");
+        let savedCodec = localStorage.getItem("codec");
+
+        console.log("Loading: ", savedFramerate, savedCodec)
+
+        if (savedCodec != "H264" && savedCodec != "VP8" && savedCodec != "VP9" && savedCodec != "AV1") {
+            console.log("Invalid codec in config: ", savedCodec)
+            savedCodec = "VP9"
+        }
+
+        savedFramerate ? setFramerate(parseInt(savedFramerate)) : null;
+        savedCodec ? setCodec(savedCodec) : null;
+    }, [])
+
     return <>
         <div className="streamHostContainer">
             {/* Video preview */}
@@ -360,7 +401,7 @@ const Stream = () => {
                 </div>
                 <div className="form-group">
                     <label htmlFor="fps">Framerate</label>
-                    <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)) }}>
+                    <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)); localStorage.setItem("framerate", ev.target.value) }}>
                         <option value={15}>15 (Recommended)</option>
                         <option value={30}>30 (Recommended if you need higher fps)</option>
                         <option value={60}>60 (Experimental, not recommended)</option>
@@ -368,10 +409,11 @@ const Stream = () => {
                 </div>
                 <div className="form-group">
                     <label htmlFor="codec">Codec</label>
-                    <select name="codec" disabled={streamStarted} onChange={(ev) => { setCodec(ev.target.value) }}>
+                    <select name="codec" value={codec} disabled={streamStarted} onChange={(ev) => { setCodec(ev.target.value); localStorage.setItem("codec", ev.target.value); }}>
                         <option value="VP9">VP9 (Recommended)</option>
-                        <option value="VP8">VP8 (Recommended if one of the viewers recieve only blank stream)</option>
+                        <option value="VP8">VP8</option>
                         <option value="AV1">AV1</option>
+                        <option value="H264">H264</option>
                     </select>
                 </div>
                 <div className="form-group">
