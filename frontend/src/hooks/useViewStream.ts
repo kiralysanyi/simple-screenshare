@@ -7,7 +7,7 @@ interface useViewStreamParams {
     roomID: string | undefined
 }
 
-const useViewStream = ({roomID}: useViewStreamParams) => {
+const useViewStream = ({ roomID }: useViewStreamParams) => {
 
     if (!roomID) {
         throw new Error("No roomid provided")
@@ -22,23 +22,7 @@ const useViewStream = ({roomID}: useViewStreamParams) => {
     useEffect(() => {
         let isFirstLaunch = firstLaunchRef.current;
         let rtpCapabilities: RtpCapabilities;
-
-        const onConnected = () => {
-            setStatus("loading");
-            setStatusMessage("Connected to server")
-            if (isFirstLaunch == false) {
-                socket.emit("joinroom", roomID, false)
-            }
-        }
-
         let consuming = false;
-
-        const onDisconnected = () => {
-            consuming = false;
-            setStatusMessage("Disconnected");
-            setStatus("error");
-        }
-
         let device: Device;
         let consumerTransport: Transport;
 
@@ -143,17 +127,28 @@ const useViewStream = ({roomID}: useViewStreamParams) => {
             });
         }
 
+        // socket event handlers
+
         const rtpHandler = (capabilities: RtpCapabilities) => {
             isFirstLaunch = false;
             firstLaunchRef.current = isFirstLaunch;
             rtpCapabilities = capabilities;
         }
 
+        const onConnected = () => {
+            setStatus("loading");
+            setStatusMessage("Connected to server")
+            if (isFirstLaunch == false) {
+                socket.emit("joinroom", roomID, false)
+            }
+        }
 
-        socket.on("routerRtpCapabilities", rtpHandler);
+        const onDisconnected = () => {
+            consuming = false;
+            setStatusMessage("Disconnected");
+            setStatus("error");
+        }
 
-        socket.on("connect", onConnected);
-        socket.on("disconnect", onDisconnected);
         const onHostLeft = () => {
             consuming = false;
             console.log("Host left")
@@ -170,25 +165,30 @@ const useViewStream = ({roomID}: useViewStreamParams) => {
             socket.emit("reset")
         }
 
-        socket.on("hostleft", onHostLeft);
-        socket.on("resetStream", onResetStream);
-
-        socket.on("ready2view", () => {
+        const onReady2View = () => {
             setStatus("loading");
             setStatusMessage("Connecting");
             console.log("Ready to view", rtpCapabilities)
             rtpCapabilities ? startConsuming(rtpCapabilities) : null;
-        })
+        }
 
         const onRoomFull = () => {
             setRoomFull(true)
         }
 
-        socket.on("room_full", onRoomFull)
+        // attach socket event handlers
+        socket.on("hostleft", onHostLeft);
+        socket.on("resetStream", onResetStream);
+        socket.on("ready2view", onReady2View)
+        socket.on("room_full", onRoomFull);
+        socket.on("routerRtpCapabilities", rtpHandler);
+        socket.on("connect", onConnected);
+        socket.on("disconnect", onDisconnected);
 
         console.log("Joining")
         socket.emit("joinroom", roomID, false)
 
+        // cleanup/detach socket event handlers
         return () => {
             clearInterval(getStatsInterval)
             socket.off("resetStream", onResetStream);
@@ -199,6 +199,7 @@ const useViewStream = ({roomID}: useViewStreamParams) => {
             socket.off("hostleft", onHostLeft);
             socket.off("ready2view", startConsuming);
             socket.emit("leaveroom");
+            socket.off("ready2view", onReady2View)
             consumerTransport?.removeAllListeners();
         }
     }, [])
