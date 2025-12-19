@@ -128,14 +128,10 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
 
     return {
         isConnected,
-        setIsConnected,
         viewers,
         roomName,
-        setRoomName,
         showModal,
-        setShowModal,
         passwordError,
-        setPasswordError,
         viewerLimit,
         setViewerLimit
     }
