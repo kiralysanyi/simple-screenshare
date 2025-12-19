@@ -1,299 +1,52 @@
-//stream ui and all of its shit
-
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import socket from "./Socket";
 import { useParams } from "react-router";
-import getStream from "./utils/getStream";
 import { Device } from "mediasoup-client";
-import type { AppData, ProducerOptions, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
+import type { Transport } from "mediasoup-client/types";
 import StreamViewer from "./StreamViewer";
+import { useSetupTransport } from "./hooks/useSetupTransport";
 import "./css/streamer.css"
+import useInitStream from "./hooks/useInitStream";
 
 
 const Stream = () => {
-
+    //transport setup start
     const deviceRef = useRef<Device | null>(null);
     const producerTransportRef = useRef<Transport | null>(null);
-
-    const [isConnected, setIsConnected] = useState(false)
-    const [password, setPassword] = useState("");
-    const [showModal, setShowModal] = useState(false);
-    const [passwordError, setPasswordError] = useState(false);
     const roomID = useParams()["id"];
     const [previewStream, setPreviewStream] = useState<MediaStream>()
     const [framerate, setFramerate] = useState(15)
     const [codec, setCodec] = useState("VP9")
-    const firstRender = useRef(true);
-    const [viewers, setViewers] = useState(0);
-    const [roomName, setRoomName] = useState("");
-    const [viewerLimit, setViewerLimit] = useState(20);
     const [rtcConnectionState, setRtcConnectionState] = useState("disconnected");
     const streamingRef = useRef(false);
-
-
-    const setupTransport = useCallback(async () => {
-        const device = deviceRef.current
-
-        if (!device) {
-            console.error("Something went wrong, device object is empty.")
-            return;
-        }
-        // setup transport
-        const stream = await getStream(framerate); // first param is framerate
-        setPreviewStream(stream);
-        const videoTrack = stream?.getVideoTracks()[0];
-
-        const onEnded = () => {
-            console.log("Ended stream by browser");
-            setRtcConnectionState("disconnected")
-            setStreamStarted(false);
-            streamingRef.current = false;
-            socket.emit("resetStream");
-            producerTransportRef.current?.close();
-        }
-        videoTrack?.addEventListener("ended", onEnded)
-        console.log(videoTrack)
-        if (videoTrack) {
-            console.log("Added end listener to track: ", videoTrack)
-        }
-
-        socket.emit("createProducerTransport", {}, async (params: TransportOptions<AppData>) => {
-            let producerTransport = device.createSendTransport(params);
-            producerTransportRef.current = producerTransport;
-
-            producerTransport.on("connect", ({ dtlsParameters }, cb) => {
-                socket.emit("connectProducerTransport", { dtlsParameters }, cb);
-            });
-
-            producerTransport.on("produce", ({ kind, rtpParameters }, cb) => {
-                socket.emit("produce", { kind, rtpParameters }, cb);
-            });
-
-            producerTransport.on("connectionstatechange", (state) => {
-                console.log("State: ", state)
-                setRtcConnectionState(state)
-                // retry if failed
-                if (state == "failed") {
-                    const retryInterval = setInterval(() => {
-                        console.log(state, streamingRef.current, socket.connected)
-                        if (state == "failed" && streamingRef.current == true && socket.connected) {
-                            console.log("Retrying");
-                            setRtcConnectionState("Restoring connection")
-                            socket.emit("resetStream");
-                            setupTransport();
-                            producerTransport.removeAllListeners()
-                            clearInterval(retryInterval);
-                        }
-                    }, 1000);
-                }
-            })
-
-            let options: ProducerOptions;
-            switch (codec) {
-                case "VP9":
-                    options = {
-                        track: videoTrack,
-                        codec: {
-                            preferredPayloadType: 96,
-                            kind: 'video',
-                            mimeType: 'video/VP9',
-                            clockRate: 90000,
-                            parameters: {
-                                'x-google-start-bitrate': 1000,
-                            },
-                        }
-                    }
-                    break;
-
-                case "VP8":
-                    options = {
-                        track: videoTrack,
-                        codec: {
-                            preferredPayloadType: 96,
-                            kind: 'video',
-                            mimeType: 'video/VP8',
-                            clockRate: 90000,
-                            parameters: {
-                                'x-google-start-bitrate': 1000,
-                            },
-                        }
-                    }
-                    break;
-
-                case "AV1":
-                    options = {
-                        track: videoTrack,
-                        codec: {
-                            preferredPayloadType: 96,
-                            kind: 'video',
-                            mimeType: 'video/AV1',
-                            clockRate: 90000,
-                            parameters: {},
-                            rtcpFeedback: [
-                                { type: 'nack' },
-                                { type: 'nack', parameter: 'pli' },
-                                { type: 'ccm', parameter: 'fir' },
-                                { type: 'goog-remb' },
-                                { type: 'transport-cc' },
-                            ],
-                        }
-                    }
-                    break;
-
-                case "H264":
-                    options = {
-                        track: videoTrack,
-                        codec: {
-                            preferredPayloadType: 96,
-                            kind: 'video',
-                            mimeType: 'video/H264',
-                            clockRate: 90000,
-                            parameters: {
-                                'packetization-mode': 1,
-                                'profile-level-id': '42e01f',
-                                'level-asymmetry-allowed': 1
-                            },
-                            rtcpFeedback: [
-                                { type: 'nack' },
-                                { type: 'nack', parameter: 'pli' },
-                                { type: 'ccm', parameter: 'fir' },
-                                { type: 'goog-remb' },
-                                { type: 'transport-cc' }
-                            ]
-                        }
-                    }
-                    break;
-
-                default:
-                    console.log("Defaulted back to VP9")
-                    options = {
-                        track: videoTrack,
-                        codec: {
-                            preferredPayloadType: 96,
-                            kind: 'video',
-                            mimeType: 'video/VP9',
-                            clockRate: 90000,
-                            parameters: {
-                                'x-google-start-bitrate': 1000,
-                            },
-                        }
-                    }
-                    break;
-            }
-
-            await producerTransport.produce(options);
-        })
-    }, [framerate, codec])
-
-    useEffect(() => {
-        let joined = false;
-
-        const onConnected = () => {
-            setIsConnected(true)
-        }
-
-        const onDisconnected = () => {
-            setIsConnected(false);
-            joined = false;
-            socket.emit("joinroom", roomID, true)
-        }
-
-        // média leves
-
-        let device = new Device();
-        deviceRef.current = device;
-
-        const onRouterRtpCapabilities = async (capabilities: RtpCapabilities) => {
-            console.log(capabilities)
-            // setup rtp
-            if (device.loaded) {
-                device = new Device();
-            }
-            await device.load({ routerRtpCapabilities: capabilities })
-            console.log("Loaded rtp capabilities of server")
-
-            console.log("Ready to start")
-
-        }
-
-
-        const onViewcount = (viewcount: number) => {
-            setViewers(viewcount)
-        }
-
-        const onNameChange = (name: string) => {
-            setRoomName(name);
-        }
-
-        let passWasWrong = false;
-
-        const onWrongPass = () => {
-            passWasWrong = true;
-            setPasswordError(true);
-            setShowModal(true);
-        }
-
-
-        const onAuthRequired = (authNeeded: boolean) => {
-            console.log("Auth needed: ", authNeeded)
-            if (authNeeded) {
-                if (localStorage.getItem("password") != null && passWasWrong == false) {
-                    socket.emit("auth", localStorage.getItem("password"))
-                    return;
-                }
-                setShowModal(true)
-                return;
-            }
-
-            passWasWrong = false;
-            setShowModal(false);
-            if (joined == false) {
-                joined = true
-                socket.emit("joinroom", roomID, true)
-            }
-        }
-
-        const onLimitchanged = (limitFromServer: number) => {
-            const savedLimit = localStorage.getItem("viewerLimit")
-            if (savedLimit) {
-                if (parseInt(savedLimit) != limitFromServer) {
-                    socket.emit("setlimit", parseInt(savedLimit));
-                    return;
-                }
-            }
-            setViewerLimit(limitFromServer)
-        }
-
-        socket.on("require_auth", onAuthRequired);
-        socket.on("viewcount", onViewcount)
-        socket.on("namechange", onNameChange)
-        socket.on("wrongpass", onWrongPass)
-        socket.on("limit_changed", onLimitchanged)
-
-        console.log("Joining")
-
-        socket.on("connect", onConnected);
-        socket.on("disconnect", onDisconnected);
-        socket.on("routerRtpCapabilities", onRouterRtpCapabilities);
-        setIsConnected(socket.connected);
-
-        socket.emit("joinroom", roomID, true);
-        return () => {
-            console.log("Cleaning up")
-            producerTransportRef.current?.close();
-            socket.emit("leaveroom");
-            socket.off("connect", onConnected);
-            socket.off("disconnect", onDisconnected);
-            socket.off("routerRtpCapabilities", onRouterRtpCapabilities);
-            socket.off("viewcount", onViewcount)
-            socket.off("namechange", onNameChange)
-            socket.off("wrongpass", onWrongPass)
-            socket.off("require_auth", onAuthRequired);
-            socket.off("limit_changed", onLimitchanged)
-        }
-    }, [])
-
     const [streamStarted, setStreamStarted] = useState(false);
+    const setupTransport = useSetupTransport({
+        deviceRef,
+        producerTransportRef,
+        framerate,
+        codec,
+        setPreviewStream,
+        setRtcConnectionState,
+        setStreamStarted,
+        streamingRef,
+    });
+
+    //transport setup end
+
+    const [password, setPassword] = useState("");
+    const firstRender = useRef(true);
+
+    //init
+
+    const {
+        isConnected,
+        passwordError,
+        roomName,
+        setViewerLimit,
+        showModal,
+        viewerLimit,
+        viewers
+    } = useInitStream({ roomID, producerTransportRef, deviceRef })
 
     const resetStream = async () => {
         socket.emit("resetStream");
