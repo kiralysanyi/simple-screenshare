@@ -6,6 +6,7 @@ import StatusIndicator from "./StatusIndicator";
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import useViewStream from "./hooks/useViewStream";
 import useWakeLock from "./hooks/useWakeLock";
+import useFullscreen from "./hooks/useFullscreen";
 
 
 const View = () => {
@@ -21,15 +22,13 @@ const View = () => {
         stream
     } = useViewStream({ roomID });
 
+    // handle fullscreen
+    const { isFullscreen, toggleFullscreen } = useFullscreen();
 
-    // fullscreen/controls handler
-    const [isFullscreen, setIsFullscreen] = useState(false);
+    // handle controls
     const [showControls, setShowControls] = useState(true);
 
     useEffect(() => {
-        function onFullscreenChange() {
-            setIsFullscreen(Boolean(document.fullscreenElement));
-        }
 
         let hideTimeout: number;
 
@@ -45,23 +44,12 @@ const View = () => {
             setShowControls(true)
         }
 
-        document.addEventListener('fullscreenchange', onFullscreenChange);
         document.addEventListener("mousemove", onMouseMove);
 
         return () => {
-            document.removeEventListener('fullscreenchange', onFullscreenChange);
             document.removeEventListener("mousemove", onMouseMove);
-            document.exitFullscreen();
         }
     }, [])
-
-    const toggleFullscreen = () => {
-        if (!isFullscreen) {
-            document.body.requestFullscreen();
-        } else {
-            document.exitFullscreen();
-        }
-    }
 
     // wakelock
 
