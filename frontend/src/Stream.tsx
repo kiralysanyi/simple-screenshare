@@ -34,7 +34,6 @@ const Stream = () => {
     //transport setup end
 
     const [password, setPassword] = useState("");
-    const firstRender = useRef(true);
 
     //init
 
@@ -69,22 +68,6 @@ const Stream = () => {
             streamingRef.current = true;
         }
     }
-
-
-    useEffect(() => {
-
-        if (firstRender.current == true) {
-            return;
-        }
-
-        if (streamStarted == true) {
-            resetStream();
-        }
-    }, [framerate, codec])
-
-    useEffect(() => {
-        firstRender.current = false;
-    })
 
     const [newRoomName, setNewRoomName] = useState(roomName);
     const [linkGreen, setLinkGreen] = useState(false);
