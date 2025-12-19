@@ -5,6 +5,7 @@ import "./css/view.css"
 import StatusIndicator from "./StatusIndicator";
 import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import useViewStream from "./hooks/useViewStream";
+import useWakeLock from "./hooks/useWakeLock";
 
 
 const View = () => {
@@ -18,7 +19,7 @@ const View = () => {
         status,
         statusMessage,
         stream
-    } = useViewStream({roomID});
+    } = useViewStream({ roomID });
 
 
     // fullscreen/controls handler
@@ -64,19 +65,7 @@ const View = () => {
 
     // wakelock
 
-    useEffect(() => {
-        let wakelock: WakeLockSentinel | undefined;
-
-        navigator.wakeLock.request().then((wl) => {
-            wakelock = wl;
-        })
-
-        return () => {
-            if (wakelock) {
-                wakelock.release();
-            }
-        }
-    }, [])
+    useWakeLock();
 
     return <>
         {stream ? <StreamViewer className="streamView" stream={stream} /> : ""}
