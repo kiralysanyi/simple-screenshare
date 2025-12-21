@@ -390,6 +390,10 @@ createWorkerAndRouter().then(() => {
         }
 
         const onSetlimit = (limit) => {
+          if (!rooms[roomid]) {
+            socket.emit("error", "room not found");
+            return;
+          }
           rooms[roomid]["limit"] = limit;
           socket.emit("limit_changed", limit)
         }
