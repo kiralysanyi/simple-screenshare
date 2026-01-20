@@ -1,8 +1,7 @@
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import './App.css'
 import { useEffect, useState } from 'react'
 import type { room } from './interfaces/room'
-import createRandomString from './utils/createRandomString'
 import socket from './Socket'
 import Header from './components/Header'
 
@@ -10,9 +9,7 @@ function App() {
 
   const [rooms, setRooms] = useState<Array<room>>([])
 
-  const [streamHistory, setStreamHistory] = useState<Record<string, room>>();
 
-  const [streamId, setStreamId] = useState(createRandomString(10))
 
   const Navigate = useNavigate();
 
@@ -31,19 +28,6 @@ function App() {
     let updateInterval = setInterval(update, 5000);
     update();
 
-    // load streaming history
-
-    const savedHistory = localStorage.getItem("streaminghistory");
-
-    if (savedHistory != null) {
-      try {
-        setStreamHistory(JSON.parse(savedHistory))
-      } catch (error) {
-        console.error("failed to load stream history: ", error)
-      }
-    }
-
-
     return () => {
       clearInterval(updateInterval)
       socket.off("roomlist", onRoomList)
@@ -61,31 +45,15 @@ function App() {
             Navigate("/view/" + room.id)
           }}>
             <h2>{room.roomname}</h2>
+            <span>Streamed by: <span>{room.hostname? room.hostname : "Unknown"}</span></span>
             <span>Viewers: {room.viewers}</span>
           </div>)}
         </div>
+        <br />
+        <button onClick={() => {Navigate("/selector")}}>Open Stream Selector</button>
       </div>
 
-      <div className='start-stream'>
-        <h2>Start Stream</h2>
 
-        <div className='input-group'>
-          <label htmlFor="streamId">Stream Id</label>
-          <input value={streamId} onChange={(ev) => { setStreamId(ev.target.value) }} name='streamId' id='streamId' type="text" placeholder='Stream id' />
-        </div>
-
-        <Link to={`/stream/${streamId}`}><button>Start stream</button></Link>
-      </div>
-
-      {streamHistory ? <div className='stream-history'>
-        <h2>Streaming history</h2>
-        <div className='streamList'>
-          {Object.keys(streamHistory).map(room => <div className='streamListItem'>
-            <h2>{streamHistory[room].roomname}</h2>
-            <Link to={`/stream/${streamHistory[room].id}`}><button>Start stream</button></Link>
-          </div>)}
-        </div>
-      </div> : ""}
     </div>
   )
 }

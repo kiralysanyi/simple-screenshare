@@ -5,6 +5,7 @@ import App from './App'
 import Stream from './Stream'
 import View from './View'
 import redirectMiddleware from './middlewares/redirectMiddleware'
+import StreamSelector from './StreamSelector'
 
 document.title = "Simple Screenshare"
 
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
   {
     path: "/view/:id",
     element: <View />
+  },
+  {
+    path: "/selector",
+    element: <StreamSelector />
   },
   {
     path: "*",
