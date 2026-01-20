@@ -49,6 +49,7 @@ createWorkerAndRouter().then(({ router, worker }) => {
           roomname: rooms[i]["roomname"],
           viewers: rooms[i]["viewers"],
           limit: rooms[i]["limit"],
+          hostname: rooms[i]["hostname"]
         })
       }
       socket.emit("roomlist", data)
