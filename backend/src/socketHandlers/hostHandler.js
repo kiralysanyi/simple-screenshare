@@ -93,7 +93,9 @@ const hostHandler = (socket, rooms, router, io) => {
 
     const onSetname = (name) => {
         console.log(`[${socket.roomid}]new room name: `, name)
-        rooms[roomid]["roomname"] = name;
+        if (rooms[roomid]) {
+            rooms[roomid]["roomname"] = name;
+        }
         io.to(roomid).emit("roomname", name)
     }
 

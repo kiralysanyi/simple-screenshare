@@ -58,7 +58,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
 
         let parsedHistory: Record<string, room> = JSON.parse(history);
 
-        if (roomID) {
+        if (roomID && parsedHistory[roomID]) {
             const roomData = parsedHistory[roomID];
             console.log("Loaded: ", roomData)
             setHostname(roomData.hostname ? roomData.hostname : "");
