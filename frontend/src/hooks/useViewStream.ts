@@ -18,6 +18,10 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
     const [status, setStatus] = useState<"ok" | "loading" | "error">("loading");
     const [statusMessage, setStatusMessage] = useState("Loading");
     const [rtpStats, setRtpStats] = useState<Array<string>>([]);
+
+    const [roomname, setRoomname] = useState("")
+    const [hostname, setHostname] = useState("")
+
     const firstLaunchRef = useRef(true);
     useEffect(() => {
         let isFirstLaunch = firstLaunchRef.current;
@@ -176,6 +180,14 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             setRoomFull(true)
         }
 
+        const onRoomName = (newName: string) => {
+            setRoomname(newName)
+        }
+
+        const onHostname = (newName: string) => {
+            setHostname(newName)
+        }
+
         // attach socket event handlers
         socket.on("hostleft", onHostLeft);
         socket.on("resetStream", onResetStream);
@@ -184,6 +196,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         socket.on("routerRtpCapabilities", rtpHandler);
         socket.on("connect", onConnected);
         socket.on("disconnect", onDisconnected);
+        socket.on("roomname", onRoomName);
+        socket.on("hostname", onHostname)
 
         console.log("Joining")
         socket.emit("joinroom", roomID, false)
@@ -200,6 +214,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             socket.off("ready2view", startConsuming);
             socket.emit("leaveroom");
             socket.off("ready2view", onReady2View)
+            socket.off("roomname", onRoomName);
+            socket.off("hostname", onHostname)
             consumerTransport?.removeAllListeners();
         }
     }, [])
@@ -209,7 +225,9 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         stream,
         status,
         statusMessage,
-        rtpStats
+        rtpStats,
+        roomname,
+        hostname
     }
 }
 

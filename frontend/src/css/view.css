@@ -11,9 +11,10 @@
     bottom: 16px;
     right: 16px;
     padding: 1rem;
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: rgba(7, 0, 79, 0.54);
+    border: 2px solid blue;
     backdrop-filter: blur(8px);
-    border-radius: 1rem;
+    border-radius: 999px;
     transition: 200ms;
     display: flex;
     flex-direction: row;
@@ -52,4 +53,22 @@
     gap: 1rem;
     color: white;
     overflow: auto;
+    border: 2px solid rgb(0, 0, 119);
+}
+
+.infocard {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    padding: 1rem;
+    background-color: rgba(7, 0, 79, 0.54);
+    border: 2px solid blue;
+    backdrop-filter: blur(8px);
+    border-radius: 999px;
+    transition: 200ms;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    gap: 0.5rem;
+    min-width: 10rem;
 }

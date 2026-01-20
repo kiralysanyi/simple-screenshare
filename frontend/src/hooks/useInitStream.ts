@@ -1,12 +1,13 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import socket from "../Socket";
 import { Device } from "mediasoup-client";
 import type { RtpCapabilities, Transport } from "mediasoup-client/types";
+import type { room } from "../interfaces/room";
 
 interface initStreamHookProps {
     roomID: string | undefined,
-    producerTransportRef: RefObject<Transport|null>,
-    deviceRef: RefObject<Device|null>
+    producerTransportRef: RefObject<Transport | null>,
+    deviceRef: RefObject<Device | null>
 }
 
 const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHookProps) => {
@@ -16,16 +17,79 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
     const [showModal, setShowModal] = useState(false);
     const [passwordError, setPasswordError] = useState(false);
     const [viewerLimit, setViewerLimit] = useState(20);
+    const [hostname, setHostname] = useState("");
 
+    const [finishedInit, setFinishedInit] = useState(false)
+
+    const saveStream = () => {
+        // save this stream in history
+
+        let history = localStorage.getItem("streaminghistory");
+        let parsedHistory: null | Record<string, room> = null;
+        if (history == null || history == "") {
+            parsedHistory = {}
+        } else {
+            parsedHistory = JSON.parse(history)
+        }
+
+        if (roomID && parsedHistory) {
+            parsedHistory[roomID] = {
+                id: roomID,
+                roomname: roomName,
+                limit: viewerLimit,
+                hostname: hostname,
+                viewers: 0
+            }
+
+            console.log("Saving: ", parsedHistory[roomID])
+
+            localStorage.setItem("streaminghistory", JSON.stringify(parsedHistory))
+        }
+
+    }
+
+    // load data from history if possible
+    const loadData = useCallback(() => {
+        console.log("Loading saved data")
+        let history = localStorage.getItem("streaminghistory");
+        if (history == null || history == "") {
+            return;
+        }
+
+        let parsedHistory: Record<string, room> = JSON.parse(history);
+
+        if (roomID && parsedHistory[roomID]) {
+            const roomData = parsedHistory[roomID];
+            console.log("Loaded: ", roomData)
+            setHostname(roomData.hostname ? roomData.hostname : "");
+            setRoomName(roomData.roomname);
+            socket.emit("setname", roomData.roomname)
+            socket.emit("hostname", roomData.hostname)
+            setViewerLimit(roomData.limit);
+        }
+
+    }, [])
+
+    useEffect(() => {
+        if (!finishedInit) {
+            return
+        }
+        saveStream();
+    }, [hostname, roomName, viewerLimit, finishedInit])
 
     useEffect(() => {
         let joined = false;
 
         const onConnected = () => {
+            socket.once("roomname", () => {
+                loadData();
+                setFinishedInit(true);
+            })
             setIsConnected(true)
         }
 
         const onDisconnected = () => {
+            setFinishedInit(false);
             setIsConnected(false);
             joined = false;
             socket.emit("joinroom", roomID, true)
@@ -46,7 +110,6 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
             console.log("Loaded rtp capabilities of server")
 
             console.log("Ready to start")
-
         }
 
 
@@ -99,7 +162,13 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
 
         socket.on("require_auth", onAuthRequired);
         socket.on("viewcount", onViewcount)
-        socket.on("namechange", onNameChange)
+        socket.on("roomname", onNameChange)
+
+        socket.once("roomname", () => {
+            loadData();
+            setFinishedInit(true);
+        })
+
         socket.on("wrongpass", onWrongPass)
         socket.on("limit_changed", onLimitchanged)
 
@@ -133,7 +202,9 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
         showModal,
         passwordError,
         viewerLimit,
-        setViewerLimit
+        setViewerLimit,
+        setHostname,
+        hostname
     }
 
 }
