@@ -61,6 +61,7 @@ createWorkerAndRouter().then(({ router, worker }) => {
         console.log("Creating room")
         rooms[roomid] = {
           roomname: roomid,
+          hostname: null,
           hostsocket: undefined,
           limit: 20,
           viewers: 0,

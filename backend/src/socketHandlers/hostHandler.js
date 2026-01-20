@@ -72,14 +72,19 @@ const hostHandler = (socket, rooms, router, io) => {
             cleanUp();
         })
 
-        socket.on("resetStream", () => {
+        const onResetStream = () => {
             rooms[roomid]["producer"] = undefined
             io.to(roomid).emit("resetStream")
             console.log("Host reset at: ", new Date().toLocaleTimeString())
-        })
+        }
 
-        socket.on("reloadStream", () => {
+        const onReloadStream = () => {
             io.to(roomid).emit("ready2view")
+        }
+
+        socket.once("leaveroom", () => {
+            socket.off("resetStream", onResetStream)
+            socket.off("reloadStream", onReloadStream)
         })
     }
 
@@ -87,7 +92,7 @@ const hostHandler = (socket, rooms, router, io) => {
 
     const onSetname = (name) => {
         rooms[roomid]["roomname"] = name;
-        io.to(roomid).emit("namechange", name)
+        io.to(roomid).emit("roomname", name)
     }
 
     const onSetlimit = (limit) => {
@@ -154,10 +159,20 @@ const hostHandler = (socket, rooms, router, io) => {
     socket.on("connectProducerTransport", onConnectProducerTransport);
     socket.on("produce", onProduce);
 
+    //handle hostname change (here hostname means the person's name who streams)
+
+    const onHostnameChange = (newName) => {
+        rooms[roomid]["hostname"] = newName;
+        io.to(roomid).emit("hostname", newName)
+    }
+
+    socket.on("hostname", onHostnameChange)
+
     socket.once("leaveroom", () => {
         socket.off("createProducerTransport", onCreateProducerTransport);
         socket.off("connectProducerTransport", onConnectProducerTransport);
         socket.off("produce", onProduce);
+        socket.off("hostname", onHostnameChange)
     })
 
     // ===========================
@@ -168,7 +183,6 @@ const hostHandler = (socket, rooms, router, io) => {
     // send rtp capabilities
     console.log("Sending router capabilities")
     socket.emit('routerRtpCapabilities', router.rtpCapabilities);
-
 
     socket.emit("namechange", rooms[roomid]["roomname"])
 }

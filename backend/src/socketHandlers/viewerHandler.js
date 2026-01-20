@@ -126,6 +126,9 @@ const viewerHandler = (socket, router, rooms) => {
         socket.off("consume", onConsume);
     })
 
+    socket.emit("hostname", rooms[roomid]["hostname"])
+    socket.emit("roomname", rooms[roomid]["roomname"])
+
     socket.emit("ready2view")
 }
 
