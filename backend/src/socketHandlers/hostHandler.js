@@ -26,6 +26,7 @@ const hostHandler = (socket, rooms, router, io) => {
         return;
     } else {
         socket.authenticated = true;
+        socket.join(roomid)
         socket.emit("require_auth", false)
     }
 
@@ -88,9 +89,10 @@ const hostHandler = (socket, rooms, router, io) => {
         })
     }
 
-    socket.join(roomid)
+
 
     const onSetname = (name) => {
+        console.log(`[${socket.roomid}]new room name: `, name)
         rooms[roomid]["roomname"] = name;
         io.to(roomid).emit("roomname", name)
     }
@@ -162,6 +164,7 @@ const hostHandler = (socket, rooms, router, io) => {
     //handle hostname change (here hostname means the person's name who streams)
 
     const onHostnameChange = (newName) => {
+        console.log("Change hostname: ", newName)
         rooms[roomid]["hostname"] = newName;
         io.to(roomid).emit("hostname", newName)
     }
@@ -184,7 +187,7 @@ const hostHandler = (socket, rooms, router, io) => {
     console.log("Sending router capabilities")
     socket.emit('routerRtpCapabilities', router.rtpCapabilities);
 
-    socket.emit("namechange", rooms[roomid]["roomname"])
+    socket.emit("roomname", rooms[roomid]["roomname"])
 }
 
 module.exports = { hostHandler }

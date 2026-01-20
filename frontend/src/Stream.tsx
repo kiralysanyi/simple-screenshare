@@ -44,7 +44,9 @@ const Stream = () => {
         setViewerLimit,
         showModal,
         viewerLimit,
-        viewers
+        viewers,
+        hostname,
+        setHostname
     } = useInitStream({ roomID, producerTransportRef, deviceRef })
 
     const resetStream = async () => {
@@ -70,6 +72,12 @@ const Stream = () => {
     }
 
     const [newRoomName, setNewRoomName] = useState(roomName);
+
+    // sync roomname to input
+    useEffect(() => {
+        setNewRoomName(roomName)
+    }, [roomName])
+
     const [linkGreen, setLinkGreen] = useState(false);
 
     const updateViewerLimit = (newLimit: number) => {
@@ -130,6 +138,7 @@ const Stream = () => {
             {/* Config */}
             <div className="settingsPanel">
                 <h1>{roomName}</h1>
+                <h2>By: {hostname}</h2>
                 <div className="form-group">
                     <button onClick={startStreaming} disabled={streamStarted}>Start</button>
                     <button onClick={resetStream}>Reset</button>
@@ -157,6 +166,13 @@ const Stream = () => {
                     <input type="text" placeholder="name" value={newRoomName} onChange={(ev) => { setNewRoomName(ev.target.value) }} />
                     <button onClick={() => {
                         socket.emit("setname", newRoomName)
+                    }}>Change</button>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="newName">Host's name</label>
+                    <input type="text" placeholder="hostname" value={hostname} onChange={(ev) => { setHostname(ev.target.value) }} />
+                    <button onClick={() => {
+                        socket.emit("hostname", hostname)
                     }}>Change</button>
                 </div>
                 <div className="form-group">
