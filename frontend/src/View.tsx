@@ -19,7 +19,9 @@ const View = () => {
         rtpStats,
         status,
         statusMessage,
-        stream
+        stream,
+        hostname,
+        roomname
     } = useViewStream({ roomID });
 
     // handle fullscreen
@@ -60,6 +62,10 @@ const View = () => {
         {roomFull ? <div className="modal_bg"><div className="modal">
             <h1>This room is full, please try again later.</h1>
         </div></div> : ""}
+        <div className={`infocard ${showControls ? "" : "hidden"}`}>
+            <span><b>Room:</b> {roomname}</span>
+            <span><b>Stream by:</b> {hostname? hostname: "Unknown"}</span>
+        </div>
         <div className={`controls ${showControls ? "" : "hidden"}`}>
             <div className="btn" onClick={toggleFullscreen}>
                 {isFullscreen ? <ArrowsPointingInIcon color="white" width={32} height={32} /> : <ArrowsPointingOutIcon color="white" width={32} height={32} />}
