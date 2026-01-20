@@ -25,21 +25,29 @@ const StreamSelector = () => {
         }
     }, [])
 
+    const clearHistory = () => {
+        localStorage.setItem("streaminghistory", "{}")
+        setStreamHistory({})
+    }
+
     return <div className="main">
         <Header></Header>
         <div className='start-stream'>
             <h2>Start Stream</h2>
 
-            <div className='input-group'>
-                <label htmlFor="streamId">Stream Id</label>
-                <input value={streamId} onChange={(ev) => { setStreamId(ev.target.value) }} name='streamId' id='streamId' type="text" placeholder='Stream id' />
-            </div>
+            <div className="new-stream-card">
+                <div className='input-group'>
+                    <label htmlFor="streamId">Stream Id</label>
+                    <input value={streamId} onChange={(ev) => { setStreamId(ev.target.value) }} name='streamId' id='streamId' type="text" placeholder='Stream id' />
+                </div>
 
-            <Link to={`/stream/${streamId}`}><button>Start new stream</button></Link>
+                <Link to={`/stream/${streamId}`}><button>Start new stream</button></Link>
+            </div>
         </div>
 
         {streamHistory ? <div className='stream-history'>
             <h2>Streaming history</h2>
+            <button onClick={clearHistory}>Clear History</button>
             <div className='streamList'>
                 {Object.keys(streamHistory).map(room => <div onClick={() => { Navigate(`/stream/${streamHistory[room].id}`) }} className='streamListItem'>
                     <h2>{streamHistory[room].roomname}</h2>

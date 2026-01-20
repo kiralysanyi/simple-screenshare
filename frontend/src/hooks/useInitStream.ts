@@ -26,7 +26,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
 
         let history = localStorage.getItem("streaminghistory");
         let parsedHistory: null | Record<string, room> = null;
-        if (history == null) {
+        if (history == null || history == "") {
             parsedHistory = {}
         } else {
             parsedHistory = JSON.parse(history)
@@ -52,7 +52,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
     const loadData = useCallback(() => {
         console.log("Loading saved data")
         let history = localStorage.getItem("streaminghistory");
-        if (history == null) {
+        if (history == null || history == "") {
             return;
         }
 
