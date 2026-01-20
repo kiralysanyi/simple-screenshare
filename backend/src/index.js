@@ -92,6 +92,8 @@ createWorkerAndRouter().then(({ router, worker }) => {
     })
   })
 
+  // serve webui if existing
+
   if (fs.existsSync("public") && fs.existsSync("public/assets")) {
     console.log("Detected public folder, hosting webapp")
     app.use("/", (req, res, next) => {
