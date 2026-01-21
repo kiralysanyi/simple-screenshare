@@ -216,3 +216,9 @@ select:disabled {
   border-radius: 16px;
   opacity: 0.3;
 }
+
+.separator {
+  width: 100%;
+  height: 2px;
+  background-color: rgb(69, 69, 255);
+}

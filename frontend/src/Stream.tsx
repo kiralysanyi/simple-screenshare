@@ -139,11 +139,13 @@ const Stream = () => {
             <div className="settingsPanel">
                 <h1>{roomName}</h1>
                 <h2>By: {hostname}</h2>
-                <div className="form-group">
+                <div className="separator"></div>
+                <div className="form-group" style={{ flexDirection: "row" }}>
                     <button onClick={startStreaming} disabled={streamStarted}>Start</button>
                     <button onClick={resetStream}>Reset</button>
                     <button onClick={stopStreaming} disabled={!streamStarted}>Stop</button>
                 </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="fps">Framerate</label>
                     <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)); localStorage.setItem("framerate", ev.target.value) }}>
@@ -161,6 +163,7 @@ const Stream = () => {
                         <option value="H264">H264</option>
                     </select>
                 </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newName">New name for room</label>
                     <input type="text" placeholder="name" value={newRoomName} onChange={(ev) => { setNewRoomName(ev.target.value) }} />
@@ -168,6 +171,7 @@ const Stream = () => {
                         socket.emit("setname", newRoomName)
                     }}>Change</button>
                 </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newName">Host's name</label>
                     <input type="text" placeholder="hostname" value={hostname} onChange={(ev) => { setHostname(ev.target.value) }} />
@@ -175,6 +179,7 @@ const Stream = () => {
                         socket.emit("hostname", hostname)
                     }}>Change</button>
                 </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newLimit">Max number of viewers allowed</label>
                     <input type="number" name="newLimit" value={viewerLimit} onChange={(ev) => updateViewerLimit(parseInt(ev.target.value))} />
