@@ -25,7 +25,7 @@ export const useSetupTransport = ({
   setStreamStarted,
   streamingRef,
 }: UseSetupTransportProps) => {
-  
+
   const setupTransport = useCallback(async () => {
     const device = deviceRef.current;
 
@@ -33,11 +33,12 @@ export const useSetupTransport = ({
       console.error("Something went wrong, device object is empty.");
       return;
     }
-    
+
     // setup transport
     const stream = await getStream(framerate);
     setPreviewStream(stream);
     const videoTrack = stream?.getVideoTracks()[0];
+    const audioTrack = stream?.getAudioTracks().length > 0 ? stream.getAudioTracks()[0] : null;
 
     const onEnded = () => {
       console.log("Ended stream by browser");
@@ -47,10 +48,10 @@ export const useSetupTransport = ({
       socket.emit("resetStream");
       producerTransportRef.current?.close();
     };
-    
+
     videoTrack?.addEventListener("ended", onEnded);
     console.log(videoTrack);
-    
+
     if (videoTrack) {
       console.log("Added end listener to track: ", videoTrack);
     }
@@ -70,7 +71,7 @@ export const useSetupTransport = ({
       producerTransport.on("connectionstatechange", (state) => {
         console.log("State: ", state);
         setRtcConnectionState(state);
-        
+
         // retry if failed
         if (state === "failed") {
           const retryInterval = setInterval(() => {
@@ -88,7 +89,7 @@ export const useSetupTransport = ({
       });
 
       let options: ProducerOptions;
-      
+
       switch (codec) {
         case "VP9":
           options = {
@@ -182,6 +183,21 @@ export const useSetupTransport = ({
       }
 
       await producerTransport.produce(options);
+
+      // if audio track available just send it
+      if (audioTrack) {
+        await producerTransport.produce({
+          track: audioTrack,
+          codec: {
+          mimeType             : "audio/opus",
+          kind                 : "audio",
+          clockRate            : 48000,
+          preferredPayloadType : 100,
+          channels             : 2
+        },
+        })
+      }
+
     });
   }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef]);
 

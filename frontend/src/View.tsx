@@ -13,6 +13,7 @@ const View = () => {
 
     const roomID = useParams()["id"];
     const [showStats, setShowStats] = useState(false);
+    const [muted, setMuted] = useState(true);
 
     const {
         roomFull,
@@ -21,7 +22,8 @@ const View = () => {
         statusMessage,
         stream,
         hostname,
-        roomname
+        roomname,
+        audioStream
     } = useViewStream({ roomID });
 
     // handle fullscreen
@@ -58,15 +60,16 @@ const View = () => {
     useWakeLock();
 
     return <>
-        {stream ? <StreamViewer className="streamView" stream={stream} /> : ""}
+        {stream ? <StreamViewer muted={muted} audioStream={audioStream} className="streamView" stream={stream} /> : ""}
         {roomFull ? <div className="modal_bg"><div className="modal">
             <h1>This room is full, please try again later.</h1>
         </div></div> : ""}
         <div className={`infocard ${showControls ? "" : "hidden"}`}>
             <span><b>Room:</b> {roomname}</span>
-            <span><b>Stream by:</b> {hostname? hostname: "Unknown"}</span>
+            <span><b>Stream by:</b> {hostname ? hostname : "Unknown"}</span>
         </div>
         <div className={`controls ${showControls ? "" : "hidden"}`}>
+            {audioStream ? <div className="btn" onClick={() => { setMuted(!muted) }}>M</div> : ""}
             <div className="btn" onClick={toggleFullscreen}>
                 {isFullscreen ? <ArrowsPointingInIcon color="white" width={32} height={32} /> : <ArrowsPointingOutIcon color="white" width={32} height={32} />}
             </div>

@@ -184,6 +184,7 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
           limit: 20,
           viewers: 0,
           producer: undefined,
+          audioProducer: undefined,
           consumers: new Map()
         }
       }

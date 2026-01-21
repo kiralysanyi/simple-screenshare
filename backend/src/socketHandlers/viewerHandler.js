@@ -113,6 +113,25 @@ const viewerHandler = (socket, router, rooms) => {
             kind: consumer.kind,
             rtpParameters: consumer.rtpParameters
         });
+
+        // if audio available
+
+        if (rooms[roomid]["audioProducer"]) {
+            const audioConsumer = await transport.consume({
+                producerId: rooms[roomid]["audioProducer"].id,
+                rtpCapabilities,
+                paused: false
+            });
+
+            socket.emit("initAudio", {
+                id: audioConsumer.id,
+                producerId: rooms[roomid]["audioProducer"].id,
+                kind: audioConsumer.kind,
+                rtpParameters: audioConsumer.rtpParameters
+            })
+
+            console.log("Audio consumer added: ", roomid)
+        }
     }
 
 
