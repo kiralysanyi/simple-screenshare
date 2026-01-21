@@ -8,29 +8,21 @@ import Header from './components/Header'
 function App() {
 
   const [rooms, setRooms] = useState<Array<room>>([])
-
-
-
   const Navigate = useNavigate();
 
   useEffect(() => {
-
     const onRoomList = (roomlist: Array<room>) => {
       setRooms(roomlist);
     }
 
     socket.on("roomlist", onRoomList)
 
-    const update = () => {
-      socket.emit("roomlist")
-    }
-
-    let updateInterval = setInterval(update, 5000);
-    update();
+    socket.emit("roomlist")
+    socket.emit("joinRoomlist")
 
     return () => {
-      clearInterval(updateInterval)
       socket.off("roomlist", onRoomList)
+      socket.emit("leaveall")
     };
   }, []);
 

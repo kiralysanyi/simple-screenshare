@@ -89,6 +89,7 @@ const hostHandler = (socket, rooms, router, io) => {
         socket.once("leaveroom", () => {
             socket.off("resetStream", onResetStream)
             socket.off("reloadStream", onReloadStream)
+            socket.leave(roomid)
         })
     }
 

@@ -30,15 +30,132 @@ io.on("error", (err) => {
 //mediasoup start
 
 const { viewerHandler } = require("./socketHandlers/viewerHandler");
-const { createWebRtcTransport, createWorkerAndRouter } = require("./utils/mediasoup");
+const { createWorkerAndRouter } = require("./utils/mediasoup");
 const { hostHandler } = require("./socketHandlers/hostHandler");
 
 // Start the server initialization
-createWorkerAndRouter().then(({ router, worker }) => {
+createWorkerAndRouter().then(async ({ router, worker }) => {
+  // get worker process stats
+  let last = await worker.getResourceUsage();
+  let lastTs = Date.now();
+
+  let usageStats;
+
+  setInterval(async () => {
+    const now = await worker.getResourceUsage();
+    const nowTs = Date.now();
+
+    const cpuTimeDelta =
+      (now.ru_utime + now.ru_stime) -
+      (last.ru_utime + last.ru_stime);
+
+    const wallTimeDelta = (nowTs - lastTs) * 1000; // ms -> µs
+
+    const cpuPercent = (cpuTimeDelta / wallTimeDelta) * 100;
+
+    const memoryMB = now.ru_maxrss / 1024;
+
+    usageStats = {
+      cpu: cpuPercent.toFixed(5) + "%",
+      memory: memoryMB.toFixed(1) + " MB",
+      ctxSwitches: now.ru_nivcsw
+    };
+
+    last = now;
+    lastTs = nowTs;
+  }, 1000);
+
+  // get network stats
+
+  let lastIn = 0;
+  let lastOut = 0;
+
+  let netstat;
+
+  setInterval(async () => {
+    let totalIn = 0;
+    let totalOut = 0;
+
+    for (const room of Object.values(rooms)) {
+      // Consumers = outgoing traffic from server
+      for (const consumer of room.consumers.values()) {
+        const stats = await consumer.getStats();
+        for (let i in stats) {
+          let s = stats[i]
+          if (typeof s.bytesSent === "number") {
+            totalOut += s.bytesSent;
+          }
+        }
+      }
+
+      // Producer = incoming traffic to server
+      if (room.producer) {
+        const stats = await room.producer.getStats();
+        for (const s of stats) {
+          if (typeof s.byteCount === "number") {
+            totalIn += s.byteCount;
+          }
+        }
+      }
+    }
+
+    const deltaIn = totalIn - lastIn;
+    const deltaOut = totalOut - lastOut;
+
+    lastIn = totalIn;
+    lastOut = totalOut;
+
+    netstat = {
+      inKbps: (deltaIn * 8 / 1000).toFixed(1),
+      outKbps: (deltaOut * 8 / 1000).toFixed(1)
+    }
+  }, 1000);
+
+
   const rooms = {}
+
+  setInterval(() => {
+    // broadcast stats
+    const stats = {
+      worker: usageStats,
+      netstat
+    }
+
+    io.to("statviewers").emit("stats", stats)
+
+    // broadcast roomlist
+    const data = [];
+    for (let i in rooms) {
+      data.push({
+        id: i,
+        roomname: rooms[i]["roomname"],
+        viewers: rooms[i]["viewers"],
+        limit: rooms[i]["limit"],
+        hostname: rooms[i]["hostname"]
+      })
+    }
+
+    io.to("roomlist").emit("roomlist", data)
+  }, 1000);
 
   io.on("connection", (socket) => {
     socket.authenticated = false;
+
+    // handle status requests
+
+    socket.on("joinStats", () => {
+      socket.join("statviewers")
+    })
+
+    socket.on("joinRoomlist", () => {
+      socket.join("roomlist")
+    })
+
+    socket.on("leaveall", () => {
+      socket.rooms.forEach((room) => {
+        socket.leave(room)
+      })
+    })
 
     // handle room list requests
     socket.on("roomlist", () => {

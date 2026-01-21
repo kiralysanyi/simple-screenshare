@@ -48,6 +48,7 @@ const createWorkerAndRouter = async () => {
     rtcMaxPort: process.env.RTC_MAX_PORT ? process.env.RTC_MAX_PORT : 40500
   });
 
+
   worker.on('died', () => {
     console.error('mediasoup Worker died, exiting...');
     process.exit(1);

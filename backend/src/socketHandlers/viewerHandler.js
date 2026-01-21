@@ -124,6 +124,7 @@ const viewerHandler = (socket, router, rooms) => {
         socket.off("createConsumerTransport", onCreateConsumerTransport);
         socket.off("connectConsumerTransport", onConnectConsumerTransport);
         socket.off("consume", onConsume);
+        socket.leave(roomid)
     })
 
     socket.emit("hostname", rooms[roomid]["hostname"])
