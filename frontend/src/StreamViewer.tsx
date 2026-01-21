@@ -18,20 +18,22 @@ const StreamViewer = ({ stream, className, audioStream, muted }: { stream?: Medi
 
     useEffect(() => {
         if (!audioRef.current) return;
-        if (!stream) return;
+        if (!audioStream) return;
 
-        audioRef.current.srcObject = stream;
+        audioRef.current.srcObject = audioStream;
 
         if (!muted) {
-            console.log("Playing stream", stream)
+            console.log("Playing stream", audioStream)
             audioRef.current.play();
+        } else {
+            audioRef.current.pause();
         }
 
     }, [audioStream, muted])
 
     return (
         <div className={className}>
-            <audio ref={audioRef} muted={muted} style={{ display: "none" }}></audio>
+            <audio ref={audioRef} style={{ display: "none" }}></audio>
             <video
                 ref={videoRef}
                 autoPlay
