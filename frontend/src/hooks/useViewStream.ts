@@ -14,10 +14,16 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
     }
 
     const [stream, setStream] = useState<MediaStream>()
+    const [audioStream, setAudioStream] = useState<MediaStream>()
+
     const [roomFull, setRoomFull] = useState(false);
     const [status, setStatus] = useState<"ok" | "loading" | "error">("loading");
     const [statusMessage, setStatusMessage] = useState("Loading");
     const [rtpStats, setRtpStats] = useState<Array<string>>([]);
+
+    const [roomname, setRoomname] = useState("")
+    const [hostname, setHostname] = useState("")
+
     const firstLaunchRef = useRef(true);
     useEffect(() => {
         let isFirstLaunch = firstLaunchRef.current;
@@ -27,7 +33,7 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         let consumerTransport: Transport;
 
         const getStatsInterval = setInterval(async () => {
-            if (consumerTransport) {
+            if (consumerTransport && consumerTransport.closed == false) {
                 const stats = await consumerTransport.getStats();
                 const statsArray: Array<string> = [];
                 stats.forEach((report) => {
@@ -73,9 +79,11 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
                             break;
 
                         case "failed":
-                            setStatus("error")
-                            consumerTransport.removeAllListeners();
-                            setStatusMessage("Webrtc connection failed")
+                            if (consuming == true) {
+                                setStatus("error")
+                                consumerTransport.removeAllListeners();
+                                setStatusMessage("Webrtc connection failed")
+                            }
                             break;
 
                         case "closed":
@@ -98,7 +106,9 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
                     }
                 })
 
-                socket.emit("consume", { rtpCapabilities: device.rtpCapabilities }, async (data: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
+                const consumeCallback = async (data: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
+                    console.log("Attach consumer: ", data)
+
                     if (data.error) {
                         console.error(data.error)
                         console.log("no producer yet");
@@ -113,17 +123,28 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
                         producerId: data.producerId,
                         kind: data.kind,
                         rtpParameters: data.rtpParameters,
-
                     });
 
 
-                    console.log("Setting stream")
+                    if (data.kind == "video") {
+                        console.log("Setting video stream")
+                        console.log(consumer.track)
+                        setStream(new MediaStream([consumer.track]));
+                        setStatus("ok")
+                        setStatusMessage("Connected")
+                        socket.emit("consume", { rtpCapabilities: device.rtpCapabilities, kind: "audio" }, consumeCallback);
+                    } else {
+                        console.log("Setting audio stream")
+                        console.log(consumer.track)
+                        setAudioStream(new MediaStream([consumer.track]))
+                        setStatus("ok")
+                        setStatusMessage("Audio connected")
+                    }
 
-                    console.log(consumer.track)
-                    setStream(new MediaStream([consumer.track]));
-                    setStatus("ok")
-                    setStatusMessage("Connected")
-                });
+
+                }
+
+                socket.emit("consume", { rtpCapabilities: device.rtpCapabilities, kind: "video" }, consumeCallback);
             });
         }
 
@@ -158,22 +179,33 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         }
 
         const onResetStream = () => {
+            consumerTransport.removeAllListeners();
+            consumerTransport.close();
             consuming = false;
             console.log("Resetting stream");
             setStatus("loading");
             setStatusMessage("Waiting for stream")
+            setAudioStream(undefined);
             socket.emit("reset")
         }
 
-        const onReady2View = () => {
+        const onReady2View = async () => {
             setStatus("loading");
             setStatusMessage("Connecting");
             console.log("Ready to view", rtpCapabilities)
-            rtpCapabilities ? startConsuming(rtpCapabilities) : null;
+            rtpCapabilities ? await startConsuming(rtpCapabilities) : null;
         }
 
         const onRoomFull = () => {
             setRoomFull(true)
+        }
+
+        const onRoomName = (newName: string) => {
+            setRoomname(newName)
+        }
+
+        const onHostname = (newName: string) => {
+            setHostname(newName)
         }
 
         // attach socket event handlers
@@ -184,6 +216,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         socket.on("routerRtpCapabilities", rtpHandler);
         socket.on("connect", onConnected);
         socket.on("disconnect", onDisconnected);
+        socket.on("roomname", onRoomName);
+        socket.on("hostname", onHostname)
 
         console.log("Joining")
         socket.emit("joinroom", roomID, false)
@@ -200,6 +234,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             socket.off("ready2view", startConsuming);
             socket.emit("leaveroom");
             socket.off("ready2view", onReady2View)
+            socket.off("roomname", onRoomName);
+            socket.off("hostname", onHostname)
             consumerTransport?.removeAllListeners();
         }
     }, [])
@@ -209,7 +245,10 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         stream,
         status,
         statusMessage,
-        rtpStats
+        rtpStats,
+        roomname,
+        hostname,
+        audioStream
     }
 }
 

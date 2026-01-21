@@ -7,7 +7,12 @@ const captureScreen = async (framerate: number = 15, width?: number, height?: nu
                 width: width,
                 height: height
             },
-            audio: false,
+            audio: {
+                autoGainControl: false,
+                echoCancellation: false,
+                noiseSuppression: false,
+                channelCount: 2
+            },
         });
 
         return stream;

@@ -44,7 +44,9 @@ const Stream = () => {
         setViewerLimit,
         showModal,
         viewerLimit,
-        viewers
+        viewers,
+        hostname,
+        setHostname
     } = useInitStream({ roomID, producerTransportRef, deviceRef })
 
     const resetStream = async () => {
@@ -61,15 +63,23 @@ const Stream = () => {
         streamingRef.current = false;
     }
 
-    const startStreaming = () => {
+    const startStreaming = async () => {
         if (producerTransportRef.current == undefined || producerTransportRef.current?.closed == true) {
-            setupTransport();
+            await setupTransport();
             setStreamStarted(true);
             streamingRef.current = true;
         }
     }
 
     const [newRoomName, setNewRoomName] = useState(roomName);
+    const [newHostName, setNewHostname] = useState("");
+
+    // sync roomname,hostname to input
+    useEffect(() => {
+        setNewRoomName(roomName)
+        setNewHostname(hostname)
+    }, [roomName, hostname])
+
     const [linkGreen, setLinkGreen] = useState(false);
 
     const updateViewerLimit = (newLimit: number) => {
@@ -98,12 +108,27 @@ const Stream = () => {
         savedCodec ? setCodec(savedCodec) : null;
     }, [])
 
+    const [hosterror, setHostError] = useState(false)
+
+    useEffect(() => {
+        const onHostError = () => {
+            setHostError(true);
+        }
+
+        socket.once("hosterror", onHostError)
+    }, [])
+
     return <>
         <div className="streamHostContainer">
             {/* Video preview */}
             <div className="infoPanel">
-                {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
-                <span>Socket connection: {isConnected ? "Connected" : "Disconnected"}</span>
+                {previewStream ? <StreamViewer muted={true} stream={previewStream}></StreamViewer> : ""}
+                <span>Socket connection: <span className={`
+                        ${isConnected ? "ok" : "error"}
+                        `}>
+                    {isConnected ? "Connected" : "Disconnected"}
+                </span>
+                </span>
                 <span>Rtc connection state: <span className={
                     `${rtcConnectionState == "connecting" ? "loading" : ""
                     }
@@ -116,7 +141,9 @@ const Stream = () => {
                     ${rtcConnectionState == "Restoring connection" ? "error" : ""}
                     `
                 }>{rtcConnectionState}</span></span>
+                <div className="separator"></div>
                 <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
+                <div className="separator"></div>
                 <h2>Invite link</h2>
                 <span>Click to copy</span>
                 <span className={`${linkGreen ? "linkGreen" : ""} inviteLink`} onClick={() => {
@@ -130,11 +157,14 @@ const Stream = () => {
             {/* Config */}
             <div className="settingsPanel">
                 <h1>{roomName}</h1>
-                <div className="form-group">
+                <h2>By: {hostname}</h2>
+                <div className="separator"></div>
+                <div className="form-group" style={{ flexDirection: "row" }}>
                     <button onClick={startStreaming} disabled={streamStarted}>Start</button>
                     <button onClick={resetStream}>Reset</button>
                     <button onClick={stopStreaming} disabled={!streamStarted}>Stop</button>
                 </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="fps">Framerate</label>
                     <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)); localStorage.setItem("framerate", ev.target.value) }}>
@@ -152,6 +182,7 @@ const Stream = () => {
                         <option value="H264">H264</option>
                     </select>
                 </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newName">New name for room</label>
                     <input type="text" placeholder="name" value={newRoomName} onChange={(ev) => { setNewRoomName(ev.target.value) }} />
@@ -159,6 +190,16 @@ const Stream = () => {
                         socket.emit("setname", newRoomName)
                     }}>Change</button>
                 </div>
+                <div className="separator"></div>
+                <div className="form-group">
+                    <label htmlFor="newName">Host's name</label>
+                    <input type="text" placeholder="hostname" value={newHostName} onChange={(ev) => { setNewHostname(ev.target.value) }} />
+                    <button onClick={() => {
+                        setHostname(newHostName)
+                        socket.emit("hostname", newHostName)
+                    }}>Change</button>
+                </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newLimit">Max number of viewers allowed</label>
                     <input type="number" name="newLimit" value={viewerLimit} onChange={(ev) => updateViewerLimit(parseInt(ev.target.value))} />
@@ -175,6 +216,9 @@ const Stream = () => {
                     <button onClick={() => { socket.emit("auth", password); localStorage.setItem("password", password) }}>Start</button>
                 </div>
             </div>
+        </div> : ""}
+        {hosterror ? <div className="modal">
+            <h1>Someone already streaming in this room.</h1>
         </div> : ""}
     </>
 }

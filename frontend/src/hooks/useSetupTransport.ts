@@ -25,7 +25,7 @@ export const useSetupTransport = ({
   setStreamStarted,
   streamingRef,
 }: UseSetupTransportProps) => {
-  
+
   const setupTransport = useCallback(async () => {
     const device = deviceRef.current;
 
@@ -33,11 +33,12 @@ export const useSetupTransport = ({
       console.error("Something went wrong, device object is empty.");
       return;
     }
-    
+
     // setup transport
     const stream = await getStream(framerate);
     setPreviewStream(stream);
     const videoTrack = stream?.getVideoTracks()[0];
+    const audioTrack = stream?.getAudioTracks().length > 0 ? stream.getAudioTracks()[0] : null;
 
     const onEnded = () => {
       console.log("Ended stream by browser");
@@ -47,10 +48,10 @@ export const useSetupTransport = ({
       socket.emit("resetStream");
       producerTransportRef.current?.close();
     };
-    
+
     videoTrack?.addEventListener("ended", onEnded);
     console.log(videoTrack);
-    
+
     if (videoTrack) {
       console.log("Added end listener to track: ", videoTrack);
     }
@@ -70,7 +71,7 @@ export const useSetupTransport = ({
       producerTransport.on("connectionstatechange", (state) => {
         console.log("State: ", state);
         setRtcConnectionState(state);
-        
+
         // retry if failed
         if (state === "failed") {
           const retryInterval = setInterval(() => {
@@ -88,7 +89,7 @@ export const useSetupTransport = ({
       });
 
       let options: ProducerOptions;
-      
+
       switch (codec) {
         case "VP9":
           options = {
@@ -181,7 +182,44 @@ export const useSetupTransport = ({
           break;
       }
 
+      // if audio track available just send it
+      if (audioTrack) {
+
+        await producerTransport.produce({
+          track: audioTrack,
+          codecOptions: {
+            opusStereo: true,
+            opusDtx: false,
+            opusMaxAverageBitrate: 128000 // Force 128kbps
+          },
+          codec: {
+            kind: 'audio',
+            mimeType: 'audio/opus',
+            clockRate: 48000,
+            preferredPayloadType: 100,
+            channels: 2,
+            parameters: {
+              // Tells the browser to send stereo
+              'sprop-stereo': 1,
+              'stereo': 1,
+              // Increase bitrate for high-quality music/video audio
+              // 128000 (128kbps) is usually the sweet spot for screenshare
+              'maxaveragebitrate': 128000,
+              // Disable DTX to prevent the audio from "cutting out" during quiet parts
+              'usedtx': 0,
+              'useinbandfec': 1
+            }
+          },
+        })
+
+      }
+
+      //send video
       await producerTransport.produce(options);
+
+      // emit signal to viewers
+      socket.emit("ready2view");
+
     });
   }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef]);
 

@@ -2,10 +2,8 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #000000;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -45,16 +43,47 @@ button {
   font-family: inherit;
   background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: 200ms;
+  color: white;
+  border: 2px solid rgb(63, 63, 255);
+}
+
+input,
+select {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  transition: 200ms;
+  color: white;
+  border: 2px solid rgb(63, 63, 255);
+  outline: 0;
+}
+
+input:hover,
+input:focus,
+select:hover,
+select:focus {
+  background-color: #171c85;
+  border-color: #646cff;
+  box-shadow: #646cff 0px 0px 4px 4px;
 }
 
 button:hover {
+  background-color: #171c85;
   border-color: #646cff;
+  box-shadow: #646cff 0px 0px 4px 4px;
 }
 
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+button:disabled,
+input:disabled,
+select:disabled {
+  background-color: #000000;
+  border: 2px solid rgb(0, 0, 116);
+  box-shadow: none;
 }
 
 /*
@@ -73,17 +102,20 @@ button:focus-visible {
 
 */
 
+/* Index page */
+
 .streamList {
   position: relative;
-  margin-left: auto;
-  margin-right: auto;
-  background-color: rgba(2, 2, 2, 0.397);
+  margin-left: 2rem;
+  margin-right: 2rem;
+  background-color: rgb(3, 3, 3);
+  border: 2px solid rgb(0, 0, 107);
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding: 1rem;
+  gap: 1rem;
+  padding: 2rem;
   border-radius: 2rem;
   user-select: none;
 }
@@ -94,14 +126,68 @@ button:focus-visible {
   flex-direction: column;
   gap: 1rem;
   cursor: pointer;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgb(27, 15, 0);
+  border: 2px solid rgb(107, 52, 0);
   border-radius: 2rem;
   transition: 200ms;
+  padding: 1rem;
 }
 
 .streamListItem:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgb(138, 76, 0);
+  box-shadow: rgba(255, 123, 0, 0.402) 0rem 0rem 1rem 1rem;
 }
+
+.header {
+  padding: 1rem;
+  color: white;
+}
+
+.main {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.start-stream {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  margin-left: auto;
+  margin-right: auto;
+  gap: 0rem;
+  align-items: start;
+}
+
+.input-group label {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.new-stream-card {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 85, 255, 0.183);
+  border: 2px solid rgb(0, 0, 255);
+  margin: auto;
+  padding: 2rem;
+  gap: 1rem;
+  border-radius: 1rem;
+}
+
+
+
+/* Viewer/streamer */
 
 .statusIndicator {
   position: fixed;
@@ -112,21 +198,25 @@ button:focus-visible {
   transition: 200ms;
   text-align: center;
   line-height: 3rem;
-  border-radius: 1rem;
+  border-radius: 999px;
   z-index: 100;
   overflow: hidden;
+  backdrop-filter: blur(4px);
 }
 
 .error {
-  background-color: rgb(124, 0, 0);
+  background-color: rgba(124, 0, 0, 0.6);
+  border: 2px solid red;
 }
 
 .ok {
-  background-color: green;
+  background-color: rgba(0, 128, 0, 0.6);
+  border: 2px solid rgb(0, 167, 0);
 }
 
 .loading {
-  background-color: rgb(124, 81, 0);
+  background-color: rgba(124, 81, 0, 0.6);
+  border: 2px solid orange;
 }
 
 .collapsed {
@@ -135,4 +225,11 @@ button:focus-visible {
   height: 16px;
   border-radius: 16px;
   opacity: 0.3;
+  backdrop-filter: none;
+}
+
+.separator {
+  width: 100%;
+  height: 2px;
+  background-color: rgb(69, 69, 255);
 }

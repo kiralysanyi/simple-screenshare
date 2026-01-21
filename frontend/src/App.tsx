@@ -1,9 +1,9 @@
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 import './App.css'
 import { useEffect, useState } from 'react'
 import type { room } from './interfaces/room'
-import createRandomString from './utils/createRandomString'
 import socket from './Socket'
+import Header from './components/Header'
 
 function App() {
 
@@ -11,38 +11,42 @@ function App() {
   const Navigate = useNavigate();
 
   useEffect(() => {
-
-    socket.on("roomlist", (roomlist: Array<room>) => {
+    const onRoomList = (roomlist: Array<room>) => {
       setRooms(roomlist);
-    })
-
-    const update = () => {
-      socket.emit("roomlist")
     }
 
-    let updateInterval = setInterval(update, 5000);
-    update();
+    socket.on("roomlist", onRoomList)
 
+    socket.emit("roomlist")
+    socket.emit("joinRoomlist")
 
     return () => {
-      clearInterval(updateInterval)
+      socket.off("roomlist", onRoomList)
+      socket.emit("leaveall")
     };
   }, []);
 
   return (
-    <>
-      <h1>Simple Screenshare</h1>
-      <Link to={`/stream/${createRandomString(10)}`}><button>Start stream</button></Link>
-      <h2>Available streams</h2>
-      <div className='streamList'>
-        {rooms.map(room => <div className='streamListItem' onClick={() => {
-          Navigate("/view/" + room.id)
-        }}>
-          <h2>{room.roomname}</h2>
-          <span>Viewers: {room.viewers}</span>
-        </div>)}
+    <div className='main'>
+      <Header></Header>
+
+      <div className='streams'>
+        <h2>Available streams</h2>
+        <div className='streamList'>
+          {rooms.map(room => <div className='streamListItem' onClick={() => {
+            Navigate("/view/" + room.id)
+          }}>
+            <h2>{room.roomname}</h2>
+            <span>Streamed by: <span>{room.hostname? room.hostname : "Unknown"}</span></span>
+            <span>Viewers: {room.viewers}</span>
+          </div>)}
+        </div>
+        <br />
+        <button onClick={() => {Navigate("/selector")}}>Start stream</button>
       </div>
-    </>
+
+
+    </div>
   )
 }
 
