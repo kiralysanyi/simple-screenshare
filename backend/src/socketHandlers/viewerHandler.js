@@ -84,7 +84,7 @@ const viewerHandler = (socket, router, rooms) => {
 
     }
 
-    const onConsume = async ({ rtpCapabilities }, cb) => {
+    const onConsume = async ({ rtpCapabilities, kind }, cb) => {
         if (!rooms[roomid]["producer"]) {
             cb({ error: "no producer" });
             return;
@@ -101,37 +101,41 @@ const viewerHandler = (socket, router, rooms) => {
             socket.emit("error", "Server: failed to set up transport")
             return;
         }
-        const consumer = await transport.consume({
-            producerId: rooms[roomid]["producer"].id,
-            rtpCapabilities,
-            paused: false
-        });
 
-        cb({
-            id: consumer.id,
-            producerId: rooms[roomid]["producer"].id,
-            kind: consumer.kind,
-            rtpParameters: consumer.rtpParameters
-        });
-
-        // if audio available
-
-        if (rooms[roomid]["audioProducer"]) {
-            const audioConsumer = await transport.consume({
-                producerId: rooms[roomid]["audioProducer"].id,
+        if (kind == "video") {
+            const consumer = await transport.consume({
+                producerId: rooms[roomid]["producer"].id,
                 rtpCapabilities,
                 paused: false
             });
 
-            socket.emit("initAudio", {
-                id: audioConsumer.id,
-                producerId: rooms[roomid]["audioProducer"].id,
-                kind: audioConsumer.kind,
-                rtpParameters: audioConsumer.rtpParameters
-            })
+            cb({
+                id: consumer.id,
+                producerId: rooms[roomid]["producer"].id,
+                kind: consumer.kind,
+                rtpParameters: consumer.rtpParameters
+            });
+        } else {
+            if (rooms[roomid]["audioProducer"]) {
+                const consumer = await transport.consume({
+                    producerId: rooms[roomid]["audioProducer"].id,
+                    rtpCapabilities,
+                    paused: false
+                });
 
-            console.log("Audio consumer added: ", roomid)
+                cb({
+                    id: consumer.id,
+                    producerId: rooms[roomid]["audioProducer"].id,
+                    kind: consumer.kind,
+                    rtpParameters: consumer.rtpParameters
+                });
+
+                console.log("Audio consumer added: ", roomid)
+            } else {
+                console.log("No audio available in: ", roomid)
+            }
         }
+
     }
 
 

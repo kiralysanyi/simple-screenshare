@@ -182,21 +182,27 @@ export const useSetupTransport = ({
           break;
       }
 
-      await producerTransport.produce(options);
-
       // if audio track available just send it
       if (audioTrack) {
+
         await producerTransport.produce({
           track: audioTrack,
           codec: {
-          mimeType             : "audio/opus",
-          kind                 : "audio",
-          clockRate            : 48000,
-          preferredPayloadType : 100,
-          channels             : 2
-        },
+            mimeType: "audio/opus",
+            kind: "audio",
+            clockRate: 48000,
+            preferredPayloadType: 100,
+            channels: 2
+          },
         })
+
       }
+
+      //send video
+      await producerTransport.produce(options);
+
+      // emit signal to viewers
+      socket.emit("ready2view");
 
     });
   }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef]);

@@ -58,6 +58,7 @@ const hostHandler = (socket, rooms, router, io) => {
                 return;
             }
             rooms[roomid]["hostsocket"] = undefined;
+            rooms[roomid]["audioProducer"] = undefined;
             io.to(roomid).emit("hostleft")
             console.log("Host left at: ", new Date().toLocaleTimeString())
             cleanUp();
@@ -76,7 +77,8 @@ const hostHandler = (socket, rooms, router, io) => {
         })
 
         const onResetStream = () => {
-            rooms[roomid]["producer"] = undefined
+            rooms[roomid]["producer"] = undefined;
+            rooms[roomid]["audioProducer"] = undefined;
             io.to(roomid).emit("resetStream")
             console.log("Host reset at: ", new Date().toLocaleTimeString())
         }
@@ -157,7 +159,7 @@ const hostHandler = (socket, rooms, router, io) => {
                 rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
                 cb({ id: rooms[roomid]["producer"].id });
                 console.log("Ready to view", roomid, new Date().toLocaleTimeString())
-                io.to(roomid).emit("ready2view", "")
+                io.to(roomid).emit("ready2view")
             } else {
                 rooms[roomid]["audioProducer"] = await videoTransport.produce({ kind, rtpParameters });
                 cb({ id: rooms[roomid]["audioProducer"].id });

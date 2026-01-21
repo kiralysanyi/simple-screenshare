@@ -106,28 +106,7 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
                     }
                 })
 
-                socket.once("initAudio", async (aData: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
-
-                    if (aData.error) {
-                        console.log("Audio error")
-                        console.error(aData.error)
-                        return;
-                    }
-
-                    const audioConsumer = await consumerTransport.consume({
-                        id: aData.id,
-                        producerId: aData.producerId,
-                        kind: aData.kind,
-                        rtpParameters: aData.rtpParameters,
-                    });
-                    console.log("Initializing audio")
-                    console.log(audioConsumer.track)
-                    setAudioStream(new MediaStream([audioConsumer.track]))
-                    setStatus("ok")
-                    setStatusMessage("Audio connected")
-                })
-
-                socket.emit("consume", { rtpCapabilities: device.rtpCapabilities }, async (data: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
+                const consumeCallback = async (data: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
                     console.log("Attach consumer: ", data)
 
                     if (data.error) {
@@ -148,14 +127,24 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
 
 
                     if (data.kind == "video") {
-                        console.log("Setting stream")
-
+                        console.log("Setting video stream")
                         console.log(consumer.track)
                         setStream(new MediaStream([consumer.track]));
                         setStatus("ok")
                         setStatusMessage("Connected")
+                        socket.emit("consume", { rtpCapabilities: device.rtpCapabilities, kind: "audio" }, consumeCallback);
+                    } else {
+                        console.log("Setting audio stream")
+                        console.log(consumer.track)
+                        setAudioStream(new MediaStream([consumer.track]))
+                        setStatus("ok")
+                        setStatusMessage("Audio connected")
                     }
-                });
+
+
+                }
+
+                socket.emit("consume", { rtpCapabilities: device.rtpCapabilities, kind: "video" }, consumeCallback);
             });
         }
 
@@ -196,6 +185,7 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             console.log("Resetting stream");
             setStatus("loading");
             setStatusMessage("Waiting for stream")
+            setAudioStream(undefined);
             socket.emit("reset")
         }
 
