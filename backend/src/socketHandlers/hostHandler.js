@@ -76,7 +76,8 @@ const hostHandler = (socket, rooms, router, io) => {
         })
 
         const onResetStream = () => {
-            rooms[roomid]["producer"] = undefined
+            rooms[roomid]["producer"] = undefined;
+            rooms[roomid]["audioProducer"] = undefined;
             io.to(roomid).emit("resetStream")
             console.log("Host reset at: ", new Date().toLocaleTimeString())
         }

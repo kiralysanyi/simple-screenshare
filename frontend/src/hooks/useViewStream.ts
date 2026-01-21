@@ -196,6 +196,7 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             console.log("Resetting stream");
             setStatus("loading");
             setStatusMessage("Waiting for stream")
+            setAudioStream(undefined);
             socket.emit("reset")
         }
 
