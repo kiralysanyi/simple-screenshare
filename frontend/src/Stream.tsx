@@ -108,6 +108,16 @@ const Stream = () => {
         savedCodec ? setCodec(savedCodec) : null;
     }, [])
 
+    const [hosterror, setHostError] = useState(false)
+
+    useEffect(() => {
+        const onHostError = () => {
+            setHostError(true);
+        }
+
+        socket.once("hosterror", onHostError)
+    }, [])
+
     return <>
         <div className="streamHostContainer">
             {/* Video preview */}
@@ -206,6 +216,9 @@ const Stream = () => {
                     <button onClick={() => { socket.emit("auth", password); localStorage.setItem("password", password) }}>Start</button>
                 </div>
             </div>
+        </div> : ""}
+        {hosterror ? <div className="modal">
+            <h1>Someone already streaming in this room.</h1>
         </div> : ""}
     </>
 }
