@@ -3,7 +3,7 @@ import { useParams } from "react-router";
 import StreamViewer from "./StreamViewer";
 import "./css/view.css"
 import StatusIndicator from "./StatusIndicator";
-import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon, XCircleIcon } from "@heroicons/react/24/solid";
+import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon, SpeakerWaveIcon, SpeakerXMarkIcon, XCircleIcon } from "@heroicons/react/24/solid";
 import useViewStream from "./hooks/useViewStream";
 import useWakeLock from "./hooks/useWakeLock";
 import useFullscreen from "./hooks/useFullscreen";
@@ -69,7 +69,9 @@ const View = () => {
             <span><b>Stream by:</b> {hostname ? hostname : "Unknown"}</span>
         </div>
         <div className={`controls ${showControls ? "" : "hidden"}`}>
-            {audioStream ? <div className="btn" onClick={() => { setMuted(!muted) }}>M</div> : ""}
+            {audioStream ? <div className="btn" onClick={() => { setMuted(!muted) }}>
+                {muted ? <SpeakerXMarkIcon color="white" width={32} height={32} /> : <SpeakerWaveIcon color="white" width={32} height={32} />}
+            </div> : ""}
             <div className="btn" onClick={toggleFullscreen}>
                 {isFullscreen ? <ArrowsPointingInIcon color="white" width={32} height={32} /> : <ArrowsPointingOutIcon color="white" width={32} height={32} />}
             </div>
