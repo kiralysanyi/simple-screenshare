@@ -45,7 +45,7 @@ button {
   cursor: pointer;
   transition: 200ms;
   color: white;
-  border: 2px solid rgb(0, 0, 255);
+  border: 2px solid rgb(63, 63, 255);
 }
 
 input,
@@ -59,7 +59,7 @@ select {
   background-color: #1a1a1a;
   transition: 200ms;
   color: white;
-  border: 2px solid rgb(0, 0, 255);
+  border: 2px solid rgb(63, 63, 255);
   outline: 0;
 }
 

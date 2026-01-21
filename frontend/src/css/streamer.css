@@ -70,6 +70,8 @@
     left: 50%;
     padding: 2rem;
     border-radius: 1rem;
-    background-color: rgb(31, 10, 10);
+    background-color: rgba(72, 0, 0, 0.507);
+    backdrop-filter: blur(4px);
+    border: 2px solid red;
     transform: translate(-50%, -50%);
 }
