@@ -16,6 +16,8 @@ const StatusPage = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
+        document.title = "Screenshare stats"
+
         const onStats = (data: stats) => {
             let tOut = data.netstat.outKbps > 1000 ? (data.netstat.outKbps / 1000).toFixed(2) + "Mbps" : data.netstat.outKbps + "Kbps"
             let tIn = data.netstat.inKbps > 1000 ? (data.netstat.inKbps / 1000).toFixed(2) + "Mbps" : data.netstat.inKbps + "Kbps"
@@ -33,7 +35,7 @@ const StatusPage = () => {
         socket.on("stats", onStats)
         socket.on("roomlist", onList)
         socket.emit("joinStats")
-        socket.emit("joinRoomList")
+        socket.emit("joinRoomlist")
         socket.emit("roomlist")
 
         return () => {

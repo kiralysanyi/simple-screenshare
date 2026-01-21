@@ -8,13 +8,9 @@ import Header from './components/Header'
 function App() {
 
   const [rooms, setRooms] = useState<Array<room>>([])
-
-
-
   const Navigate = useNavigate();
 
   useEffect(() => {
-
     const onRoomList = (roomlist: Array<room>) => {
       setRooms(roomlist);
     }
