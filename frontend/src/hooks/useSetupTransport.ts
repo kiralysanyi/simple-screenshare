@@ -187,12 +187,28 @@ export const useSetupTransport = ({
 
         await producerTransport.produce({
           track: audioTrack,
+          codecOptions: {
+            opusStereo: true,
+            opusDtx: false,
+            opusMaxAverageBitrate: 128000 // Force 128kbps
+          },
           codec: {
-            mimeType: "audio/opus",
-            kind: "audio",
+            kind: 'audio',
+            mimeType: 'audio/opus',
             clockRate: 48000,
             preferredPayloadType: 100,
-            channels: 2
+            channels: 2,
+            parameters: {
+              // Tells the browser to send stereo
+              'sprop-stereo': 1,
+              'stereo': 1,
+              // Increase bitrate for high-quality music/video audio
+              // 128000 (128kbps) is usually the sweet spot for screenshare
+              'maxaveragebitrate': 128000,
+              // Disable DTX to prevent the audio from "cutting out" during quiet parts
+              'usedtx': 0,
+              'useinbandfec': 1
+            }
           },
         })
 
