@@ -31,7 +31,7 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         let consumerTransport: Transport;
 
         const getStatsInterval = setInterval(async () => {
-            if (consumerTransport) {
+            if (consumerTransport && consumerTransport.closed == false) {
                 const stats = await consumerTransport.getStats();
                 const statsArray: Array<string> = [];
                 stats.forEach((report) => {
@@ -77,9 +77,11 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
                             break;
 
                         case "failed":
-                            setStatus("error")
-                            consumerTransport.removeAllListeners();
-                            setStatusMessage("Webrtc connection failed")
+                            if (consuming == true) {
+                                setStatus("error")
+                                consumerTransport.removeAllListeners();
+                                setStatusMessage("Webrtc connection failed")
+                            }
                             break;
 
                         case "closed":
