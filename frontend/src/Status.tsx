@@ -32,15 +32,14 @@ const StatusPage = () => {
 
         socket.on("stats", onStats)
         socket.on("roomlist", onList)
-
-        let refreshInterval = setInterval(() => {
-            socket.emit("getStats")
-            socket.emit("roomlist")
-        }, 1500);
+        socket.emit("joinStats")
+        socket.emit("joinRoomList")
+        socket.emit("roomlist")
 
         return () => {
             socket.off("stats", onStats);
-            clearInterval(refreshInterval);
+            socket.off("roomlist", onList)
+            socket.emit("leaveall")
         }
     }, [])
 
@@ -62,7 +61,7 @@ const StatusPage = () => {
 
         <h2>Current streams / rooms</h2>
         <div className="streamList">
-            {roomlist ? roomlist.map(room => <div onClick={() => {navigate(`/view/${room.id}`)}} className="streamListItem">
+            {roomlist ? roomlist.map(room => <div onClick={() => { navigate(`/view/${room.id}`) }} className="streamListItem">
                 <h2>{room.roomname}</h2>
                 <span>Streamed by: <span>{room.hostname ? room.hostname : "Unknown"}</span></span>
                 <span>Viewers: {room.viewers}/{room.limit}</span>

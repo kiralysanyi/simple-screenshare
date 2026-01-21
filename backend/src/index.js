@@ -114,18 +114,47 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
 
   const rooms = {}
 
+  setInterval(() => {
+    // broadcast stats
+    const stats = {
+      worker: usageStats,
+      netstat
+    }
+
+    io.to("statviewers").emit("stats", stats)
+
+    // broadcast roomlist
+    const data = [];
+    for (let i in rooms) {
+      data.push({
+        id: i,
+        roomname: rooms[i]["roomname"],
+        viewers: rooms[i]["viewers"],
+        limit: rooms[i]["limit"],
+        hostname: rooms[i]["hostname"]
+      })
+    }
+
+    io.to("roomlist").emit("roomlist", data)
+  }, 1000);
+
   io.on("connection", (socket) => {
     socket.authenticated = false;
 
     // handle status requests
 
-    socket.on("getStats", () => {
-      const stats = {
-        worker: usageStats,
-        netstat
-      }
+    socket.on("joinStats", () => {
+      socket.join("statviewers")
+    })
 
-      socket.emit("stats", stats)
+    socket.on("joinRoomlist", () => {
+      socket.join("roomlist")
+    })
+
+    socket.on("leaveall", () => {
+      socket.rooms.forEach((room) => {
+        socket.leave(room)
+      })
     })
 
     // handle room list requests

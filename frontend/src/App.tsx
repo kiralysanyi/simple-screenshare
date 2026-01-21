@@ -21,16 +21,12 @@ function App() {
 
     socket.on("roomlist", onRoomList)
 
-    const update = () => {
-      socket.emit("roomlist")
-    }
-
-    let updateInterval = setInterval(update, 5000);
-    update();
+    socket.emit("roomlist")
+    socket.emit("joinRoomlist")
 
     return () => {
-      clearInterval(updateInterval)
       socket.off("roomlist", onRoomList)
+      socket.emit("leaveall")
     };
   }, []);
 
