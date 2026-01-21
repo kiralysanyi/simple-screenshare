@@ -63,9 +63,9 @@ const Stream = () => {
         streamingRef.current = false;
     }
 
-    const startStreaming = () => {
+    const startStreaming = async () => {
         if (producerTransportRef.current == undefined || producerTransportRef.current?.closed == true) {
-            setupTransport();
+            await setupTransport();
             setStreamStarted(true);
             streamingRef.current = true;
         }

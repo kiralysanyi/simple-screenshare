@@ -162,6 +162,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         }
 
         const onResetStream = () => {
+            consumerTransport.removeAllListeners();
+            consumerTransport.close();
             consuming = false;
             console.log("Resetting stream");
             setStatus("loading");
@@ -169,11 +171,11 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             socket.emit("reset")
         }
 
-        const onReady2View = () => {
+        const onReady2View = async () => {
             setStatus("loading");
             setStatusMessage("Connecting");
             console.log("Ready to view", rtpCapabilities)
-            rtpCapabilities ? startConsuming(rtpCapabilities) : null;
+            rtpCapabilities ? await startConsuming(rtpCapabilities) : null;
         }
 
         const onRoomFull = () => {

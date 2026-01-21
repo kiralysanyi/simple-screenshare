@@ -50,7 +50,7 @@ function App() {
           </div>)}
         </div>
         <br />
-        <button onClick={() => {Navigate("/selector")}}>Open Stream Selector</button>
+        <button onClick={() => {Navigate("/selector")}}>Start stream</button>
       </div>
 
 
