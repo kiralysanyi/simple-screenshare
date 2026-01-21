@@ -15,6 +15,7 @@ const hostHandler = (socket, rooms, router, io) => {
             if (pass == process.env.HOST_PASS) {
                 socket.authenticated = true;
                 socket.emit("require_auth", false);
+                socket.join(roomid)
             } else {
                 socket.emit("wrongpass")
             }
@@ -78,6 +79,8 @@ const hostHandler = (socket, rooms, router, io) => {
             io.to(roomid).emit("resetStream")
             console.log("Host reset at: ", new Date().toLocaleTimeString())
         }
+
+        socket.on("resetStream", onResetStream)
 
         const onReloadStream = () => {
             io.to(roomid).emit("ready2view")
