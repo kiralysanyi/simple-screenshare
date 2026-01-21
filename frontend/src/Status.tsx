@@ -1,13 +1,19 @@
 import { useEffect, useState } from "react";
 import socket from "./Socket";
 import type { stats } from "./interfaces/stats";
+import type { room } from "./interfaces/room";
+import { useNavigate } from "react-router";
 
 const StatusPage = () => {
     const [inbound, setInbound] = useState("");
     const [outbound, setOutbound] = useState("");
 
     const [cpu, setCpu] = useState("");
-    const [memory, setMemory] = useState("")
+    const [memory, setMemory] = useState("");
+
+    const [roomlist, setRoomlist] = useState<Array<room>>()
+
+    const navigate = useNavigate();
 
     useEffect(() => {
         const onStats = (data: stats) => {
@@ -20,10 +26,16 @@ const StatusPage = () => {
             setMemory(data.worker.memory)
         }
 
+        const onList = (rooms: Array<room>) => {
+            setRoomlist(rooms);
+        }
+
         socket.on("stats", onStats)
+        socket.on("roomlist", onList)
 
         let refreshInterval = setInterval(() => {
             socket.emit("getStats")
+            socket.emit("roomlist")
         }, 1500);
 
         return () => {
@@ -47,6 +59,15 @@ const StatusPage = () => {
         <span>CPU: {cpu}</span>
         <span>Memory: {memory}</span>
         <div className="separator"></div>
+
+        <h2>Current streams / rooms</h2>
+        <div className="streamList">
+            {roomlist ? roomlist.map(room => <div onClick={() => {navigate(`/view/${room.id}`)}} className="streamListItem">
+                <h2>{room.roomname}</h2>
+                <span>Streamed by: <span>{room.hostname ? room.hostname : "Unknown"}</span></span>
+                <span>Viewers: {room.viewers}/{room.limit}</span>
+            </div>) : ""}
+        </div>
     </div>
 }
 
