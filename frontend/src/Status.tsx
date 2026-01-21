@@ -11,8 +11,8 @@ const StatusPage = () => {
 
     useEffect(() => {
         const onStats = (data: stats) => {
-            let tOut = data.netstat.outKbps > 1000 ? (data.netstat.outKbps / 1000) + "Mbps" : data.netstat.outKbps + "Kbps"
-            let tIn = data.netstat.inKbps > 1000 ? (data.netstat.inKbps / 1000) + "Mbps" : data.netstat.inKbps + "Kbps"
+            let tOut = data.netstat.outKbps > 1000 ? (data.netstat.outKbps / 1000).toFixed(2) + "Mbps" : data.netstat.outKbps + "Kbps"
+            let tIn = data.netstat.inKbps > 1000 ? (data.netstat.inKbps / 1000).toFixed(2) + "Mbps" : data.netstat.inKbps + "Kbps"
 
             setInbound(tIn)
             setOutbound(tOut)
