@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 
-const StreamViewer = ({ stream, className }: { stream?: MediaStream, className?: string }) => {
+const StreamViewer = ({ stream, className, audioStream, muted }: { stream?: MediaStream, className?: string, audioStream?: MediaStream, muted: boolean }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const audioRef = useRef<HTMLVideoElement>(null)
 
     useEffect(() => {
         if (!videoRef.current) return;
@@ -15,15 +16,31 @@ const StreamViewer = ({ stream, className }: { stream?: MediaStream, className?:
 
     }, [stream]);
 
+    useEffect(() => {
+        if (!audioRef.current) return;
+        if (!stream) return;
+
+        audioRef.current.srcObject = stream;
+
+        if (!muted) {
+            console.log("Playing stream", stream)
+            audioRef.current.play();
+        }
+
+    }, [audioStream, muted])
+
     return (
-        <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className={className}
-            style={{ width: "100%", background: "#000" }}
-        />
+        <div className={className}>
+            <audio ref={audioRef} muted={muted} style={{ display: "none" }}></audio>
+            <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className={className}
+                style={{ width: "100%", background: "#000" }}
+            />
+        </div>
     )
 }
 

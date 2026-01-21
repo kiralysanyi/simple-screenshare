@@ -14,6 +14,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
     }
 
     const [stream, setStream] = useState<MediaStream>()
+    const [audioStream, setAudioStream] = useState<MediaStream>()
+
     const [roomFull, setRoomFull] = useState(false);
     const [status, setStatus] = useState<"ok" | "loading" | "error">("loading");
     const [statusMessage, setStatusMessage] = useState("Loading");
@@ -104,7 +106,30 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
                     }
                 })
 
+                socket.once("initAudio", async (aData: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
+
+                    if (aData.error) {
+                        console.log("Audio error")
+                        console.error(aData.error)
+                        return;
+                    }
+
+                    const audioConsumer = await consumerTransport.consume({
+                        id: aData.id,
+                        producerId: aData.producerId,
+                        kind: aData.kind,
+                        rtpParameters: aData.rtpParameters,
+                    });
+                    console.log("Initializing audio")
+                    console.log(audioConsumer.track)
+                    setAudioStream(new MediaStream([audioConsumer.track]))
+                    setStatus("ok")
+                    setStatusMessage("Audio connected")
+                })
+
                 socket.emit("consume", { rtpCapabilities: device.rtpCapabilities }, async (data: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
+                    console.log("Attach consumer: ", data)
+
                     if (data.error) {
                         console.error(data.error)
                         console.log("no producer yet");
@@ -119,16 +144,17 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
                         producerId: data.producerId,
                         kind: data.kind,
                         rtpParameters: data.rtpParameters,
-
                     });
 
 
-                    console.log("Setting stream")
+                    if (data.kind == "video") {
+                        console.log("Setting stream")
 
-                    console.log(consumer.track)
-                    setStream(new MediaStream([consumer.track]));
-                    setStatus("ok")
-                    setStatusMessage("Connected")
+                        console.log(consumer.track)
+                        setStream(new MediaStream([consumer.track]));
+                        setStatus("ok")
+                        setStatusMessage("Connected")
+                    }
                 });
             });
         }
@@ -231,7 +257,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         statusMessage,
         rtpStats,
         roomname,
-        hostname
+        hostname,
+        audioStream
     }
 }
 

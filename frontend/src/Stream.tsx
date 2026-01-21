@@ -112,7 +112,7 @@ const Stream = () => {
         <div className="streamHostContainer">
             {/* Video preview */}
             <div className="infoPanel">
-                {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
+                {previewStream ? <StreamViewer muted={true} stream={previewStream}></StreamViewer> : ""}
                 <span>Socket connection: <span className={`
                         ${isConnected ? "ok" : "error"}
                         `}>

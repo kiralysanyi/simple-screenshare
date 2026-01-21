@@ -102,6 +102,12 @@ const createWorkerAndRouter = async () => {
         { type: 'transport-cc' }
       ]
     },
+    {
+      mimeType: "audio/opus",
+      kind: "audio",
+      clockRate: 48000,
+      channels: 2
+    },
   ];
 
   const router = await worker.createRouter({ mediaCodecs });
@@ -109,7 +115,7 @@ const createWorkerAndRouter = async () => {
 
   console.log('mediasoup Worker and Router initialized.');
 
-  return {router, worker}
+  return { router, worker }
 };
 
-module.exports = {createWebRtcTransport, createWorkerAndRouter}
+module.exports = { createWebRtcTransport, createWorkerAndRouter }
