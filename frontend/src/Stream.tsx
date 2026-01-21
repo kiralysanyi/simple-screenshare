@@ -113,7 +113,12 @@ const Stream = () => {
             {/* Video preview */}
             <div className="infoPanel">
                 {previewStream ? <StreamViewer stream={previewStream}></StreamViewer> : ""}
-                <span>Socket connection: {isConnected ? "Connected" : "Disconnected"}</span>
+                <span>Socket connection: <span className={`
+                        ${isConnected ? "ok" : "error"}
+                        `}>
+                    {isConnected ? "Connected" : "Disconnected"}
+                </span>
+                </span>
                 <span>Rtc connection state: <span className={
                     `${rtcConnectionState == "connecting" ? "loading" : ""
                     }
@@ -126,7 +131,9 @@ const Stream = () => {
                     ${rtcConnectionState == "Restoring connection" ? "error" : ""}
                     `
                 }>{rtcConnectionState}</span></span>
+                <div className="separator"></div>
                 <span className="viewers">Viewers: {viewers}/{viewerLimit}</span>
+                <div className="separator"></div>
                 <h2>Invite link</h2>
                 <span>Click to copy</span>
                 <span className={`${linkGreen ? "linkGreen" : ""} inviteLink`} onClick={() => {
