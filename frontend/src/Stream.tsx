@@ -72,11 +72,13 @@ const Stream = () => {
     }
 
     const [newRoomName, setNewRoomName] = useState(roomName);
+    const [newHostName, setNewHostname] = useState("");
 
-    // sync roomname to input
+    // sync roomname,hostname to input
     useEffect(() => {
         setNewRoomName(roomName)
-    }, [roomName])
+        setNewHostname(hostname)
+    }, [roomName, hostname])
 
     const [linkGreen, setLinkGreen] = useState(false);
 
@@ -174,9 +176,10 @@ const Stream = () => {
                 <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newName">Host's name</label>
-                    <input type="text" placeholder="hostname" value={hostname} onChange={(ev) => { setHostname(ev.target.value) }} />
+                    <input type="text" placeholder="hostname" value={newHostName} onChange={(ev) => { setNewHostname(ev.target.value) }} />
                     <button onClick={() => {
-                        socket.emit("hostname", hostname)
+                        setHostname(newHostName)
+                        socket.emit("hostname", newHostName)
                     }}>Change</button>
                 </div>
                 <div className="separator"></div>
