@@ -12,6 +12,7 @@ const hostHandler = (socket, rooms, router, io) => {
     // authenticate if password enabled, and client joins as host
     if (process.env.HOST_PASS_ENABLE == 1 && socket.authenticated == false) {
         const onAuthHandler = (pass) => {
+            console.log("Authenticating")
             if (pass == process.env.HOST_PASS) {
                 socket.authenticated = true;
                 socket.emit("require_auth", false);
@@ -73,6 +74,8 @@ const hostHandler = (socket, rooms, router, io) => {
             rooms[roomid]["audioProducer"] = undefined;
             io.to(roomid).emit("hostleft")
             console.log("Host left at: ", new Date().toLocaleTimeString())
+            console.log(rooms[roomid])
+            socket.authenticated = false;
             cleanUp();
         })
 
@@ -119,8 +122,8 @@ const hostHandler = (socket, rooms, router, io) => {
     socket.on("setlimit", onSetlimit)
 
     socket.once("leaveroom", () => {
-        socket.on("setname", onSetname)
-        socket.on("setlimit", onSetlimit)
+        socket.off("setname", onSetname)
+        socket.off("setlimit", onSetlimit)
     })
 
     socket.emit("limit_changed", rooms[roomid]["limit"])

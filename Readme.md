@@ -8,6 +8,7 @@ A lightweight screen sharing web application written in TypeScript/JavaScript us
 * [Setup Notes](#setup-notes)
 * [Example Docker Compose with Host Networking](#example-docker-compose-with-host-networking)
 * [Example Docker Compose with IPVLAN](#example-docker-compose-with-ipvlan)
+* [Status page](#status-page)
 * [Why I Started This Project](#why-i-started-this-project)
 * [How It Went](#how-it-went)
 
@@ -80,6 +81,10 @@ networks:
         - subnet: 192.168.1.0/24
           gateway: 192.168.1.1
 ```
+
+## Status page
+
+There is a status page available under `/status`
 
 ## Why I Started This Project
 

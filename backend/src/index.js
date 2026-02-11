@@ -173,6 +173,7 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
     })
 
     socket.on("joinroom", (roomid, isHost) => {
+      console.log("Joining")
 
       // create room if not existing
       if (!rooms[roomid]) {
