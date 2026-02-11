@@ -30,6 +30,13 @@ const StreamSelector = () => {
         setStreamHistory({})
     }
 
+    const removeItem = (roomID: string) => {
+        const newList = { ...streamHistory }
+        delete newList[roomID];
+        localStorage.setItem("streaminghistory", JSON.stringify(newList));
+        setStreamHistory(newList);
+    }
+
     return <div className="main">
         <Header></Header>
         <div className='start-stream'>
@@ -53,6 +60,11 @@ const StreamSelector = () => {
                     <h2>{streamHistory[room].roomname}</h2>
                     <span>ID: <b>{streamHistory[room].id}</b></span>
                     <span>Host's name: <b>{streamHistory[room].hostname}</b></span>
+                    <button onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        removeItem(room)
+                    }}>Remove</button>
                 </div>)}
             </div>
         </div> : ""}

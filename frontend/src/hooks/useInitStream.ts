@@ -92,6 +92,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
             setFinishedInit(false);
             setIsConnected(false);
             joined = false;
+            console.log("Sending joinroom after disconnect")
             socket.emit("joinroom", roomID, true)
         }
 
@@ -144,7 +145,8 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
             passWasWrong = false;
             setShowModal(false);
             if (joined == false) {
-                joined = true
+                joined = true;
+                console.log("Sending authenticated joinroom")
                 socket.emit("joinroom", roomID, true)
             }
         }
@@ -179,6 +181,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
         socket.on("routerRtpCapabilities", onRouterRtpCapabilities);
         setIsConnected(socket.connected);
 
+        console.log("Sending initial joinroom")
         socket.emit("joinroom", roomID, true);
         return () => {
             console.log("Cleaning up")
