@@ -46,22 +46,25 @@ const StatusPage = () => {
     }, [])
 
     return <div className="main">
-        <h1>Status</h1>
-
-        <div className="separator"></div>
-
-        <h2>Network usage</h2>
-        <span>Inbound: {inbound}</span>
-        <span>Outbound: {outbound}</span>
-
-        <div className="separator"></div>
-
-        <h2>Resource usage</h2>
-        <span>CPU: {cpu}</span>
-        <span>Memory: {memory}</span>
-        <div className="separator"></div>
-
-        <h2>Current streams / rooms</h2>
+        <div className="header"><h1>Status</h1></div>
+        <div className="status-grid">
+            <section className="status-card">
+                <span className="status-label">Network usage</span>
+                <strong>{inbound}</strong>
+                <small>Inbound</small>
+                <strong>{outbound}</strong>
+                <small>Outbound</small>
+            </section>
+            <section className="status-card">
+                <span className="status-label">Resource usage</span>
+                <strong>{cpu}</strong>
+                <small>CPU</small>
+                <strong>{memory}</strong>
+                <small>Memory</small>
+            </section>
+        </div>
+        <section className="status-rooms">
+        <h2>Current streams</h2>
         <div className="streamList">
             {roomlist ? roomlist.map(room => <div onClick={() => { navigate(`/view/${room.id}`) }} className="streamListItem">
                 <h2>{room.roomname}</h2>
@@ -69,6 +72,7 @@ const StatusPage = () => {
                 <span>Viewers: {room.viewers}/{room.limit}</span>
             </div>) : ""}
         </div>
+        </section>
     </div>
 }
 

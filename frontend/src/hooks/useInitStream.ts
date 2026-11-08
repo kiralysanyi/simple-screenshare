@@ -18,6 +18,10 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
     const [passwordError, setPasswordError] = useState(false);
     const [viewerLimit, setViewerLimit] = useState(20);
     const [hostname, setHostname] = useState("");
+    const [hiddenFromLists, setHiddenFromLists] = useState(() => {
+        const saved = localStorage.getItem("hideFromLists");
+        return saved === null ? true : saved === "true";
+    });
 
     const [finishedInit, setFinishedInit] = useState(false)
 
@@ -162,6 +166,21 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
             setViewerLimit(limitFromServer)
         }
 
+        const onListVisibility = (hidden: boolean) => {
+            const saved = localStorage.getItem("hideFromLists");
+            if (saved === null) {
+                localStorage.setItem("hideFromLists", hidden.toString());
+                setHiddenFromLists(hidden);
+                return;
+            }
+
+            const preferredVisibility = saved === "true";
+            setHiddenFromLists(preferredVisibility);
+            if (preferredVisibility !== hidden) {
+                socket.emit("setlistvisibility", preferredVisibility);
+            }
+        }
+
         socket.on("require_auth", onAuthRequired);
         socket.on("viewcount", onViewcount)
         socket.on("roomname", onNameChange)
@@ -173,6 +192,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
 
         socket.on("wrongpass", onWrongPass)
         socket.on("limit_changed", onLimitchanged)
+        socket.on("listvisibility", onListVisibility)
 
         console.log("Joining")
 
@@ -195,6 +215,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
             socket.off("wrongpass", onWrongPass)
             socket.off("require_auth", onAuthRequired);
             socket.off("limit_changed", onLimitchanged)
+            socket.off("listvisibility", onListVisibility)
         }
     }, [])
 
@@ -207,7 +228,8 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
         viewerLimit,
         setViewerLimit,
         setHostname,
-        hostname
+        hostname,
+        hiddenFromLists
     }
 
 }

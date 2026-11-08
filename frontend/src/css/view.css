@@ -1,74 +1,11 @@
-.streamView {
-    position: fixed;
-    top: 0px;
-    left: 0px;
-    width: 100%;
-    height: 100%;
-}
-
-.controls {
-    position: fixed;
-    bottom: 16px;
-    right: 16px;
-    padding: 1rem;
-    background-color: rgba(7, 0, 79, 0.54);
-    border: 2px solid blue;
-    backdrop-filter: blur(8px);
-    border-radius: 999px;
-    transition: 200ms;
-    display: flex;
-    flex-direction: row;
-    gap: 0.5rem;
-}
-
-.controls .btn {
-    padding: 10px;
-    border-radius: 100%;
-    background-color: transparent;
-    transition: 200ms;
-    display: flex;
-    align-items: center;
-    justify-items: center;
-}
-
-.controls .btn:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-.hidden {
-    opacity: 0;
-}
-
-.statsDisplay {
-    position: fixed;
-    z-index: 100;
-    top: 16px;
-    left: 50%;
-    transform: translate(-50%, 0%);
-    background-color: rgba(0, 0, 0, 0.5);
-    max-width: 80dvw;
-    max-height: 80dvh;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    color: white;
-    overflow: auto;
-    border: 2px solid rgb(0, 0, 119);
-}
-
-.infocard {
-    position: fixed;
-    top: 16px;
-    right: 16px;
-    padding: 1rem;
-    background-color: rgba(7, 0, 79, 0.54);
-    border: 2px solid blue;
-    backdrop-filter: blur(8px);
-    border-radius: 999px;
-    transition: 200ms;
-    display: flex;
-    flex-direction: column;
-    text-align: left;
-    gap: 0.5rem;
-    min-width: 10rem;
-}
+.streamView { position: fixed; inset: 0; width: 100%; height: 100%; background: #02040a; }
+.controls, .infocard { position: fixed; z-index: 10; border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(28, 28, 30, 0.72); backdrop-filter: blur(24px) saturate(140%); box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.35); transition: opacity 250ms ease, transform 250ms ease; }
+.controls { right: 1rem; bottom: 1rem; display: flex; gap: 0.3rem; padding: 0.35rem; border-radius: 999px; }
+.controls .btn { display: flex; align-items: center; padding: 0.65rem; border-radius: 999px; cursor: pointer; transition: background 180ms ease, transform 180ms ease; }
+.controls .btn:hover { background: rgba(10, 132, 255, 0.25); transform: scale(1.06); }
+.infocard { top: 1rem; right: 1rem; display: flex; flex-direction: column; gap: 0.3rem; min-width: 12rem; padding: 0.8rem 1rem; border-radius: 0.85rem; color: #dbe4f7; }
+.infocard span { font-size: 0.85rem; }
+.infocard b { color: var(--muted); font-weight: 500; }
+.hidden { opacity: 0; pointer-events: none; transform: translateY(5px); }
+.statsDisplay { position: fixed; z-index: 100; top: 1rem; left: 50%; display: flex; flex-direction: column; gap: 0.35rem; max-width: min(80vw, 34rem); max-height: 70vh; padding: 1rem; overflow: auto; border: 1px solid var(--line); border-radius: 1.1rem; color: #dbe4f7; background: rgba(28, 28, 30, 0.9); backdrop-filter: blur(24px); transform: translateX(-50%); animation: page-in 250ms ease both; }
+.statsDisplay span { color: var(--muted); font: 0.78rem ui-monospace, SFMono-Regular, Menlo, monospace; }

@@ -36,10 +36,6 @@ async function createWebRtcTransport(router) {
 }
 
 
-/**
- * 
- * @returns {{router: import("mediasoup/types").Router, worker: import("mediasoup/types").Worker}}
- */
 const createWorkerAndRouter = async () => {
   // 1. Create a Worker
   const worker = await mediasoup.createWorker({
@@ -76,12 +72,16 @@ const createWorkerAndRouter = async () => {
       kind: 'video',
       mimeType: 'video/AV1',
       clockRate: 90000,
-      parameters: {},
+      parameters: {
+        profile: 0,
+        'level-idx': 8,
+        tier: 0,
+        'x-google-start-bitrate': 4000,
+      },
       rtcpFeedback: [
         { type: 'nack' },
         { type: 'nack', parameter: 'pli' },
         { type: 'ccm', parameter: 'fir' },
-        { type: 'goog-remb' },
         { type: 'transport-cc' },
       ],
     },
@@ -92,13 +92,13 @@ const createWorkerAndRouter = async () => {
       parameters: {
         'packetization-mode': 1,
         'profile-level-id': '42e01f',
-        'level-asymmetry-allowed': 1
+        'level-asymmetry-allowed': 1,
+        'x-google-start-bitrate': 1200,
       },
       rtcpFeedback: [
         { type: 'nack' },
         { type: 'nack', parameter: 'pli' },
         { type: 'ccm', parameter: 'fir' },
-        { type: 'goog-remb' },
         { type: 'transport-cc' }
       ]
     },
@@ -127,6 +127,27 @@ const createWorkerAndRouter = async () => {
   console.log('mediasoup Worker and Router initialized.');
 
   return { router, worker }
+}
+
+
+/**
+ * 
+ * @returns {{router: import("mediasoup/types").Router, worker: import("mediasoup/types").Worker}}
+ */
+const createWorkersAndRouters = async () => {
+  const workers = []
+  const routers = []
+
+  const workercount = parseInt(process.env.WORKERS);
+
+  for (let i = 0; i < workercount; i++) {
+    console.log("Creating worker/router: ", i)
+    let {worker, router} = await createWorkerAndRouter();
+    workers.push(worker);
+    routers.push(router);
+  }
+
+  return {workers, routers}
 };
 
-module.exports = { createWebRtcTransport, createWorkerAndRouter }
+module.exports = { createWebRtcTransport, createWorkersAndRouters }

@@ -46,6 +46,7 @@ const Stream = () => {
         viewerLimit,
         viewers,
         hostname,
+        hiddenFromLists,
         setHostname
     } = useInitStream({ roomID, producerTransportRef, deviceRef })
 
@@ -163,6 +164,19 @@ const Stream = () => {
                     <button onClick={startStreaming} disabled={streamStarted}>Start</button>
                     <button onClick={resetStream}>Reset</button>
                     <button onClick={stopStreaming} disabled={!streamStarted}>Stop</button>
+                </div>
+                <div className="separator"></div>
+                <div className="form-group visibility-setting">
+                    <label htmlFor="hideFromLists">Hide from overview and status lists</label>
+                    <input
+                        id="hideFromLists"
+                        type="checkbox"
+                        checked={hiddenFromLists}
+                        onChange={(ev) => {
+                            localStorage.setItem("hideFromLists", ev.target.checked.toString());
+                            socket.emit("setlistvisibility", ev.target.checked);
+                        }}
+                    />
                 </div>
                 <div className="separator"></div>
                 <div className="form-group">
