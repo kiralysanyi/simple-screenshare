@@ -30,85 +30,142 @@ io.on("error", (err) => {
 //mediasoup start
 
 const { viewerHandler } = require("./socketHandlers/viewerHandler");
-const { createWorkerAndRouter } = require("./utils/mediasoup");
+const { createWorkersAndRouters } = require("./utils/mediasoup");
 const { hostHandler } = require("./socketHandlers/hostHandler");
 
 // Start the server initialization
-createWorkerAndRouter().then(async ({ router, worker }) => {
-  // get worker process stats
-  let last = await worker.getResourceUsage();
-  let lastTs = Date.now();
+createWorkersAndRouters().then(async ({ routers, workers }) => {
+  let nextRouter = 0;
 
+  const selectRouter = () => {
+    const router = routers[nextRouter];
+    nextRouter = (nextRouter + 1) % routers.length;
+    return router;
+  };
+
+  // get worker process stats
+  const previousWorkerUsage = workers.map(() => undefined);
+  const previousWorkerTimestamp = workers.map(() => undefined);
   let usageStats;
 
-  setInterval(async () => {
-    const now = await worker.getResourceUsage();
-    const nowTs = Date.now();
+  const collectWorkerStats = async () => {
+    const nowTimestamp = Date.now();
+    const workerStats = await Promise.all(workers.map(async (worker, index) => {
+      const usage = await worker.getResourceUsage();
+      const previousUsage = previousWorkerUsage[index];
+      const previousTimestamp = previousWorkerTimestamp[index];
+      const wallTimeMicroseconds = previousTimestamp
+        ? (nowTimestamp - previousTimestamp) * 1000
+        : 0;
+      const cpuTimeMicroseconds = previousUsage
+        ? (usage.ru_utime + usage.ru_stime) -
+          (previousUsage.ru_utime + previousUsage.ru_stime)
+        : 0;
 
-    const cpuTimeDelta =
-      (now.ru_utime + now.ru_stime) -
-      (last.ru_utime + last.ru_stime);
+      previousWorkerUsage[index] = usage;
+      previousWorkerTimestamp[index] = nowTimestamp;
 
-    const wallTimeDelta = (nowTs - lastTs) * 1000; // ms -> µs
-
-    const cpuPercent = (cpuTimeDelta / wallTimeDelta) * 100;
-
-    const memoryMB = now.ru_maxrss / 1024;
+      return {
+        worker: index,
+        cpu: wallTimeMicroseconds > 0
+          ? ((cpuTimeMicroseconds / wallTimeMicroseconds) * 100).toFixed(2) + "%"
+          : "0.00%",
+        memory: (usage.ru_maxrss / 1024).toFixed(1) + " MB",
+        ctxSwitches: usage.ru_nivcsw
+      };
+    }));
 
     usageStats = {
-      cpu: cpuPercent.toFixed(5) + "%",
-      memory: memoryMB.toFixed(1) + " MB",
-      ctxSwitches: now.ru_nivcsw
+      cpu: workerStats.reduce((total, stats) =>
+        total + Number.parseFloat(stats.cpu), 0).toFixed(2) + "%",
+      memory: workerStats.reduce((total, stats) =>
+        total + Number.parseFloat(stats.memory), 0).toFixed(1) + " MB",
+      ctxSwitches: workerStats.reduce((total, stats) =>
+        total + stats.ctxSwitches, 0)
     };
+  };
 
-    last = now;
-    lastTs = nowTs;
+  setInterval(() => {
+    collectWorkerStats().catch((error) => {
+      console.error("Failed to collect worker stats:", error);
+    });
   }, 5000);
 
   // get network stats
 
-  let lastIn = 0;
-  let lastOut = 0;
-
   let netstat;
+  const previousProducerBytes = new Map();
+  const previousConsumerBytes = new Map();
 
-  setInterval(async () => {
+  const collectNetworkStats = async () => {
     let totalIn = 0;
     let totalOut = 0;
+    const activeProducerIds = new Set();
+    const activeConsumerIds = new Set();
+    const producerRequests = [];
+    const consumerRequests = [];
 
     for (const room of Object.values(rooms)) {
       // Consumers = outgoing traffic from server
       for (const consumer of room.consumers.values()) {
-        const stats = await consumer.getStats();
-        for (let i in stats) {
-          let s = stats[i]
-          if (typeof s.bytesSent === "number") {
-            totalOut += s.bytesSent;
-          }
-        }
+        activeConsumerIds.add(consumer.id);
+        consumerRequests.push(consumer.getStats().then((stats) => ({
+          id: consumer.id,
+          bytes: stats.reduce((total, report) =>
+            total + (typeof report.bytesSent === "number" ? report.bytesSent : 0), 0)
+        })));
       }
 
-      // Producer = incoming traffic to server
-      if (room.producer) {
-        const stats = await room.producer.getStats();
-        for (const s of stats) {
-          if (typeof s.byteCount === "number") {
-            totalIn += s.byteCount;
-          }
+      for (const producer of [room.producer, room.audioProducer]) {
+        if (producer) {
+          activeProducerIds.add(producer.id);
+          producerRequests.push(producer.getStats().then((stats) => ({
+            id: producer.id,
+            bytes: stats.reduce((total, report) =>
+              total + (typeof report.byteCount === "number" ? report.byteCount : 0), 0)
+          })));
         }
       }
     }
 
-    const deltaIn = totalIn - lastIn;
-    const deltaOut = totalOut - lastOut;
+    const [producers, consumers] = await Promise.all([
+      Promise.all(producerRequests),
+      Promise.all(consumerRequests)
+    ]);
 
-    lastIn = totalIn;
-    lastOut = totalOut;
+    for (const { id, bytes } of producers) {
+      const previous = previousProducerBytes.get(id);
+      if (previous !== undefined && bytes >= previous) {
+        totalIn += bytes - previous;
+      }
+      previousProducerBytes.set(id, bytes);
+    }
+
+    for (const { id, bytes } of consumers) {
+      const previous = previousConsumerBytes.get(id);
+      if (previous !== undefined && bytes >= previous) {
+        totalOut += bytes - previous;
+      }
+      previousConsumerBytes.set(id, bytes);
+    }
+
+    for (const id of previousProducerBytes.keys()) {
+      if (!activeProducerIds.has(id)) previousProducerBytes.delete(id);
+    }
+    for (const id of previousConsumerBytes.keys()) {
+      if (!activeConsumerIds.has(id)) previousConsumerBytes.delete(id);
+    }
 
     netstat = {
-      inKbps: (deltaIn * 8 / 1000).toFixed(1),
-      outKbps: (deltaOut * 8 / 1000).toFixed(1)
-    }
+      inKbps: (totalIn * 8 / 5 / 1000).toFixed(1),
+      outKbps: (totalOut * 8 / 5 / 1000).toFixed(1)
+    };
+  };
+
+  setInterval(() => {
+    collectNetworkStats().catch((error) => {
+      console.error("Failed to collect network stats:", error);
+    });
   }, 5000);
 
 
@@ -186,7 +243,8 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
           viewers: 0,
           producer: undefined,
           audioProducer: undefined,
-          consumers: new Map()
+          consumers: new Map(),
+          router: selectRouter()
         }
       }
 
@@ -203,12 +261,12 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
 
       if (isHost != true) {
         socket.roomid = roomid;
-        return viewerHandler(socket, router, rooms)
+        return viewerHandler(socket, rooms[roomid].router, rooms)
       }
 
       if (isHost == true) {
         socket.roomid = roomid
-        return hostHandler(socket, rooms, router, io)
+        return hostHandler(socket, rooms, rooms[roomid].router, io)
       }
     })
   })
