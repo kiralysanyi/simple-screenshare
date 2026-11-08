@@ -4,6 +4,8 @@
 .settingsPanel { padding: 1.25rem; border: 1px solid var(--line); border-radius: 1.35rem; background: var(--panel); backdrop-filter: blur(28px) saturate(140%); }
 .form-group { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; }
 .form-group[style] { flex-direction: row; align-items: center; }
+.visibility-setting { flex-direction: row; align-items: center; justify-content: space-between; }
+.visibility-setting input[type="checkbox"] { width: 2.8rem; height: 1.65rem; margin: 0; accent-color: var(--accent); cursor: pointer; }
 .inviteLink { display: block; padding: 0.75rem 1rem; border: 1px solid rgba(10, 132, 255, 0.3); border-radius: 0.75rem; color: #64d2ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: copy; transition: background 180ms ease, border-color 180ms ease; }
 .inviteLink:hover { background: rgba(139, 156, 255, 0.1); border-color: var(--accent); }
 .linkGreen { color: var(--success); border-color: var(--success); }

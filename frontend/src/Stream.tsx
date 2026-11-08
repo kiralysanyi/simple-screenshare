@@ -166,6 +166,19 @@ const Stream = () => {
                     <button onClick={stopStreaming} disabled={!streamStarted}>Stop</button>
                 </div>
                 <div className="separator"></div>
+                <div className="form-group visibility-setting">
+                    <label htmlFor="hideFromLists">Hide from overview and status lists</label>
+                    <input
+                        id="hideFromLists"
+                        type="checkbox"
+                        checked={hiddenFromLists}
+                        onChange={(ev) => {
+                            localStorage.setItem("hideFromLists", ev.target.checked.toString());
+                            socket.emit("setlistvisibility", ev.target.checked);
+                        }}
+                    />
+                </div>
+                <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="fps">Framerate</label>
                     <select name="fps" disabled={streamStarted} value={framerate} onChange={(ev) => { setFramerate(parseInt(ev.target.value)); localStorage.setItem("framerate", ev.target.value) }}>
@@ -204,15 +217,6 @@ const Stream = () => {
                 <div className="form-group">
                     <label htmlFor="newLimit">Max number of viewers allowed</label>
                     <input type="number" name="newLimit" value={viewerLimit} onChange={(ev) => updateViewerLimit(parseInt(ev.target.value))} />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="hideFromLists">Hide from overview and status lists</label>
-                    <input
-                        id="hideFromLists"
-                        type="checkbox"
-                        checked={hiddenFromLists}
-                        onChange={(ev) => socket.emit("setlistvisibility", ev.target.checked)}
-                    />
                 </div>
             </div>
         </div>

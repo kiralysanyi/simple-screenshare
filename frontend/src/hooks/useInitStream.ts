@@ -18,7 +18,10 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
     const [passwordError, setPasswordError] = useState(false);
     const [viewerLimit, setViewerLimit] = useState(20);
     const [hostname, setHostname] = useState("");
-    const [hiddenFromLists, setHiddenFromLists] = useState(false);
+    const [hiddenFromLists, setHiddenFromLists] = useState(() => {
+        const saved = localStorage.getItem("hideFromLists");
+        return saved === null ? true : saved === "true";
+    });
 
     const [finishedInit, setFinishedInit] = useState(false)
 
@@ -164,7 +167,18 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
         }
 
         const onListVisibility = (hidden: boolean) => {
-            setHiddenFromLists(hidden);
+            const saved = localStorage.getItem("hideFromLists");
+            if (saved === null) {
+                localStorage.setItem("hideFromLists", hidden.toString());
+                setHiddenFromLists(hidden);
+                return;
+            }
+
+            const preferredVisibility = saved === "true";
+            setHiddenFromLists(preferredVisibility);
+            if (preferredVisibility !== hidden) {
+                socket.emit("setlistvisibility", preferredVisibility);
+            }
         }
 
         socket.on("require_auth", onAuthRequired);
