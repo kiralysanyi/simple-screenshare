@@ -133,15 +133,31 @@ const hostHandler = (socket, rooms, router, io) => {
         socket.emit("limit_changed", limit)
     }
 
+    const onSetListVisibility = (hidden) => {
+        if (!rooms[roomid]) {
+            socket.emit("error", "room not found");
+            return;
+        }
+        if (typeof hidden !== "boolean") {
+            socket.emit("error", "invalid list visibility");
+            return;
+        }
+        rooms[roomid]["hidden"] = hidden;
+        socket.emit("listvisibility", hidden);
+    }
+
     socket.on("setname", onSetname)
     socket.on("setlimit", onSetlimit)
+    socket.on("setlistvisibility", onSetListVisibility)
 
     socket.once("leaveroom", () => {
         socket.off("setname", onSetname)
         socket.off("setlimit", onSetlimit)
+        socket.off("setlistvisibility", onSetListVisibility)
     })
 
     socket.emit("limit_changed", rooms[roomid]["limit"])
+    socket.emit("listvisibility", rooms[roomid]["hidden"] === true)
 
     // még több médialeves
 

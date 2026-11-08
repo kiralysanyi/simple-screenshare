@@ -46,6 +46,7 @@ const Stream = () => {
         viewerLimit,
         viewers,
         hostname,
+        hiddenFromLists,
         setHostname
     } = useInitStream({ roomID, producerTransportRef, deviceRef })
 
@@ -203,6 +204,15 @@ const Stream = () => {
                 <div className="form-group">
                     <label htmlFor="newLimit">Max number of viewers allowed</label>
                     <input type="number" name="newLimit" value={viewerLimit} onChange={(ev) => updateViewerLimit(parseInt(ev.target.value))} />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="hideFromLists">Hide from overview and status lists</label>
+                    <input
+                        id="hideFromLists"
+                        type="checkbox"
+                        checked={hiddenFromLists}
+                        onChange={(ev) => socket.emit("setlistvisibility", ev.target.checked)}
+                    />
                 </div>
             </div>
         </div>

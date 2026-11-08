@@ -171,6 +171,16 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
 
   const rooms = {}
 
+  const getVisibleRoomList = () => Object.entries(rooms)
+    .filter(([, room]) => room.hidden !== true)
+    .map(([id, room]) => ({
+      id,
+      roomname: room.roomname,
+      viewers: room.viewers,
+      limit: room.limit,
+      hostname: room.hostname
+    }));
+
   setInterval(() => {
     // broadcast stats
     const stats = {
@@ -181,18 +191,7 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
     io.to("statviewers").emit("stats", stats)
 
     // broadcast roomlist
-    const data = [];
-    for (let i in rooms) {
-      data.push({
-        id: i,
-        roomname: rooms[i]["roomname"],
-        viewers: rooms[i]["viewers"],
-        limit: rooms[i]["limit"],
-        hostname: rooms[i]["hostname"]
-      })
-    }
-
-    io.to("roomlist").emit("roomlist", data)
+    io.to("roomlist").emit("roomlist", getVisibleRoomList())
   }, 5000);
 
   io.on("connection", (socket) => {
@@ -216,17 +215,7 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
 
     // handle room list requests
     socket.on("roomlist", () => {
-      const data = [];
-      for (let i in rooms) {
-        data.push({
-          id: i,
-          roomname: rooms[i]["roomname"],
-          viewers: rooms[i]["viewers"],
-          limit: rooms[i]["limit"],
-          hostname: rooms[i]["hostname"]
-        })
-      }
-      socket.emit("roomlist", data)
+      socket.emit("roomlist", getVisibleRoomList())
     })
 
     socket.on("joinroom", (roomid, isHost) => {
@@ -244,7 +233,8 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
           producer: undefined,
           audioProducer: undefined,
           consumers: new Map(),
-          router: selectRouter()
+          router: selectRouter(),
+          hidden: false
         }
       }
 
