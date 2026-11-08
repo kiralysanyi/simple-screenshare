@@ -9,6 +9,21 @@ const { createWebRtcTransport } = require("../utils/mediasoup");
  */
 const hostHandler = (socket, rooms, router, io) => {
     const roomid = socket.roomid;
+    let videoTransport;
+
+    const cleanupMedia = () => {
+        const room = rooms[roomid];
+        if (room) {
+            room["producer"]?.close();
+            room["audioProducer"]?.close();
+            room["producer"] = undefined;
+            room["audioProducer"] = undefined;
+        }
+
+        videoTransport?.close();
+        videoTransport = undefined;
+    };
+
     // authenticate if password enabled, and client joins as host
     if (process.env.HOST_PASS_ENABLE == 1 && socket.authenticated == false) {
         const onAuthHandler = (pass) => {
@@ -58,8 +73,9 @@ const hostHandler = (socket, rooms, router, io) => {
             if (!rooms[roomid]) {
                 return;
             }
+
+            cleanupMedia();
             rooms[roomid]["hostsocket"] = undefined;
-            rooms[roomid]["audioProducer"] = undefined;
             io.to(roomid).emit("hostleft")
             console.log("Host left at: ", new Date().toLocaleTimeString())
             cleanUp();
@@ -69,9 +85,9 @@ const hostHandler = (socket, rooms, router, io) => {
             if (!rooms[roomid]) {
                 return;
             }
+
+            cleanupMedia();
             rooms[roomid]["hostsocket"] = undefined;
-            rooms[roomid]["producer"] = undefined;
-            rooms[roomid]["audioProducer"] = undefined;
             io.to(roomid).emit("hostleft")
             console.log("Host left at: ", new Date().toLocaleTimeString())
             console.log(rooms[roomid])
@@ -80,8 +96,7 @@ const hostHandler = (socket, rooms, router, io) => {
         })
 
         const onResetStream = () => {
-            rooms[roomid]["producer"] = undefined;
-            rooms[roomid]["audioProducer"] = undefined;
+            cleanupMedia();
             io.to(roomid).emit("resetStream")
             console.log("Host reset at: ", new Date().toLocaleTimeString())
         }
@@ -130,9 +145,9 @@ const hostHandler = (socket, rooms, router, io) => {
 
     // még több médialeves
 
-    let videoTransport;
     // ===========================
     const onCreateProducerTransport = async (_, cb) => {
+        cleanupMedia();
         const { transport, params } = await createWebRtcTransport(router);
         videoTransport = transport;
         socket.once("close", () => {
@@ -159,11 +174,13 @@ const hostHandler = (socket, rooms, router, io) => {
         }
         try {
             if (kind == "video") {
+                rooms[roomid]["producer"]?.close();
                 rooms[roomid]["producer"] = await videoTransport.produce({ kind, rtpParameters });
                 cb({ id: rooms[roomid]["producer"].id });
                 console.log("Ready to view", roomid, new Date().toLocaleTimeString())
                 io.to(roomid).emit("ready2view")
             } else {
+                rooms[roomid]["audioProducer"]?.close();
                 rooms[roomid]["audioProducer"] = await videoTransport.produce({ kind, rtpParameters });
                 cb({ id: rooms[roomid]["audioProducer"].id });
                 console.log("Audio ready: ", roomid)
