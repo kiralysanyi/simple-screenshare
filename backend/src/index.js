@@ -63,7 +63,7 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
 
     last = now;
     lastTs = nowTs;
-  }, 1000);
+  }, 5000);
 
   // get network stats
 
@@ -109,7 +109,7 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
       inKbps: (deltaIn * 8 / 1000).toFixed(1),
       outKbps: (deltaOut * 8 / 1000).toFixed(1)
     }
-  }, 1000);
+  }, 5000);
 
 
   const rooms = {}
@@ -136,7 +136,7 @@ createWorkerAndRouter().then(async ({ router, worker }) => {
     }
 
     io.to("roomlist").emit("roomlist", data)
-  }, 1000);
+  }, 5000);
 
   io.on("connection", (socket) => {
     socket.authenticated = false;
