@@ -72,12 +72,16 @@ const createWorkerAndRouter = async () => {
       kind: 'video',
       mimeType: 'video/AV1',
       clockRate: 90000,
-      parameters: {},
+      parameters: {
+        profile: 0,
+        'level-idx': 8,
+        tier: 0,
+        'x-google-start-bitrate': 4000,
+      },
       rtcpFeedback: [
         { type: 'nack' },
         { type: 'nack', parameter: 'pli' },
         { type: 'ccm', parameter: 'fir' },
-        { type: 'goog-remb' },
         { type: 'transport-cc' },
       ],
     },
@@ -88,13 +92,13 @@ const createWorkerAndRouter = async () => {
       parameters: {
         'packetization-mode': 1,
         'profile-level-id': '42e01f',
-        'level-asymmetry-allowed': 1
+        'level-asymmetry-allowed': 1,
+        'x-google-start-bitrate': 1200,
       },
       rtcpFeedback: [
         { type: 'nack' },
         { type: 'nack', parameter: 'pli' },
         { type: 'ccm', parameter: 'fir' },
-        { type: 'goog-remb' },
         { type: 'transport-cc' }
       ]
     },

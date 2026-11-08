@@ -88,6 +88,27 @@ export const useSetupTransport = ({
         }
       });
 
+      const simulcastEncodings = [
+        {
+          rid: "q",
+          scaleResolutionDownBy: 4,
+          maxBitrate: 250_000,
+          maxFramerate: Math.min(framerate, 15),
+        },
+        {
+          rid: "h",
+          scaleResolutionDownBy: 2,
+          maxBitrate: 800_000,
+          maxFramerate: framerate,
+        },
+        {
+          rid: "f",
+          scaleResolutionDownBy: 1,
+          maxBitrate: 2_500_000,
+          maxFramerate: framerate,
+        },
+      ];
+
       let options: ProducerOptions;
 
       switch (codec) {
@@ -102,7 +123,7 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
-            }
+            },
           };
           break;
 
@@ -117,7 +138,8 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
-            }
+            },
+            encodings: simulcastEncodings,
           };
           break;
 
@@ -125,19 +147,27 @@ export const useSetupTransport = ({
           options = {
             track: videoTrack,
             codec: {
-              preferredPayloadType: 96,
+              preferredPayloadType: 103,
               kind: 'video',
               mimeType: 'video/AV1',
               clockRate: 90000,
-              parameters: {},
+              parameters: {
+                profile: 0,
+                'level-idx': 8,
+                tier: 0,
+                'x-google-start-bitrate': 4000,
+              },
               rtcpFeedback: [
                 { type: 'nack' },
                 { type: 'nack', parameter: 'pli' },
                 { type: 'ccm', parameter: 'fir' },
-                { type: 'goog-remb' },
                 { type: 'transport-cc' },
               ],
-            }
+            },
+            encodings: [{
+              maxBitrate: 8_000_000,
+              maxFramerate: Math.min(framerate, 60),
+            }],
           };
           break;
 
@@ -145,23 +175,27 @@ export const useSetupTransport = ({
           options = {
             track: videoTrack,
             codec: {
-              preferredPayloadType: 96,
+              preferredPayloadType: 102,
               kind: 'video',
               mimeType: 'video/H264',
               clockRate: 90000,
               parameters: {
                 'packetization-mode': 1,
                 'profile-level-id': '42e01f',
-                'level-asymmetry-allowed': 1
+                'level-asymmetry-allowed': 1,
+                'x-google-start-bitrate': 1200,
               },
               rtcpFeedback: [
                 { type: 'nack' },
                 { type: 'nack', parameter: 'pli' },
                 { type: 'ccm', parameter: 'fir' },
-                { type: 'goog-remb' },
                 { type: 'transport-cc' }
-              ]
-            }
+              ],
+            },
+            encodings: [{
+              maxBitrate: 2_500_000,
+              maxFramerate: framerate,
+            }],
           };
           break;
 
