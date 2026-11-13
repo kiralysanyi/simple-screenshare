@@ -222,7 +222,7 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
       console.log("Joining")
       if (isHost == true) {
         socket.roomid = roomid
-        return hostHandler(socket, rooms, rooms[roomid].router, io)
+        return hostHandler(socket, rooms, io, selectRouter)
       }
 
       // create room if not existing

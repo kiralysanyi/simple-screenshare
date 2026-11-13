@@ -7,9 +7,10 @@ const { createWebRtcTransport } = require("../utils/mediasoup");
  * @param {import("mediasoup/types").Router} router
  * @param {Server} io
  */
-const hostHandler = (socket, rooms, router, io) => {
+const hostHandler = (socket, rooms, io, selectRouter = () => { }) => {
     const roomid = socket.roomid;
     let videoTransport;
+    let router;
 
     // Clean up mediasoup related stuff
     const cleanupMedia = () => {
@@ -62,6 +63,7 @@ const hostHandler = (socket, rooms, router, io) => {
             }
         }
 
+        router = rooms[roomid].router
         socket.join(roomid)
         socket.emit("require_auth", false)
     }
