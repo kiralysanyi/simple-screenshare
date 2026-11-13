@@ -11,6 +11,7 @@ const hostHandler = (socket, rooms, router, io) => {
     const roomid = socket.roomid;
     let videoTransport;
 
+    // Clean up mediasoup related stuff
     const cleanupMedia = () => {
         const room = rooms[roomid];
         if (room) {
@@ -43,6 +44,24 @@ const hostHandler = (socket, rooms, router, io) => {
         return;
     } else {
         socket.authenticated = true;
+
+        // create room if not existing
+        if (!rooms[roomid]) {
+            console.log("Creating room")
+            rooms[roomid] = {
+                roomname: roomid,
+                hostname: null,
+                hostsocket: undefined,
+                limit: 20,
+                viewers: 0,
+                producer: undefined,
+                audioProducer: undefined,
+                consumers: new Map(),
+                router: selectRouter(),
+                hidden: false
+            }
+        }
+
         socket.join(roomid)
         socket.emit("require_auth", false)
     }
