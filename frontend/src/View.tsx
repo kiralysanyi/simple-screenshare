@@ -23,7 +23,8 @@ const View = () => {
         stream,
         hostname,
         roomname,
-        audioStream
+        audioStream,
+        noRoom
     } = useViewStream({ roomID });
 
     // handle fullscreen
@@ -63,6 +64,9 @@ const View = () => {
         {stream ? <StreamViewer muted={muted} audioStream={audioStream} className="streamView" stream={stream} /> : ""}
         {roomFull ? <div className="modal_bg"><div className="modal">
             <h1>This room is full, please try again later.</h1>
+        </div></div> : ""}
+        {noRoom ? <div className="modal_bg"><div className="modal">
+            <h1>This room does not exist yet, please try again later.</h1>
         </div></div> : ""}
         <div className={`infocard ${showControls ? "" : "hidden"}`}>
             <span><b>Room:</b> {roomname}</span>

@@ -17,6 +17,7 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
     const [audioStream, setAudioStream] = useState<MediaStream>()
 
     const [roomFull, setRoomFull] = useState(false);
+    const [noRoom, setNoRoom] = useState(false);
     const [status, setStatus] = useState<"ok" | "loading" | "error">("loading");
     const [statusMessage, setStatusMessage] = useState("Loading");
     const [rtpStats, setRtpStats] = useState<Array<string>>([]);
@@ -208,6 +209,10 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             setHostname(newName)
         }
 
+        const onRoom404 = () => {
+            setNoRoom(true)
+        }
+
         // attach socket event handlers
         socket.on("hostleft", onHostLeft);
         socket.on("resetStream", onResetStream);
@@ -217,7 +222,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         socket.on("connect", onConnected);
         socket.on("disconnect", onDisconnected);
         socket.on("roomname", onRoomName);
-        socket.on("hostname", onHostname)
+        socket.on("hostname", onHostname);
+        socket.on("room_404", onRoom404);
 
         console.log("Joining")
         socket.emit("joinroom", roomID, false)
@@ -235,7 +241,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             socket.emit("leaveroom");
             socket.off("ready2view", onReady2View)
             socket.off("roomname", onRoomName);
-            socket.off("hostname", onHostname)
+            socket.off("hostname", onHostname);
+            socket.off("room_404", onRoom404);
             consumerTransport?.removeAllListeners();
         }
     }, [])
@@ -248,7 +255,8 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
         rtpStats,
         roomname,
         hostname,
-        audioStream
+        audioStream,
+        noRoom
     }
 }
 

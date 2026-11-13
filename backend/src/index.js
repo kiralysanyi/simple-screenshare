@@ -59,7 +59,7 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
         : 0;
       const cpuTimeMicroseconds = previousUsage
         ? (usage.ru_utime + usage.ru_stime) -
-          (previousUsage.ru_utime + previousUsage.ru_stime)
+        (previousUsage.ru_utime + previousUsage.ru_stime)
         : 0;
 
       previousWorkerUsage[index] = usage;
@@ -220,22 +220,14 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
 
     socket.on("joinroom", (roomid, isHost) => {
       console.log("Joining")
+      if (isHost == true) {
+        socket.roomid = roomid
+        return hostHandler(socket, rooms, io, selectRouter)
+      }
 
       // create room if not existing
       if (!rooms[roomid]) {
-        console.log("Creating room")
-        rooms[roomid] = {
-          roomname: roomid,
-          hostname: null,
-          hostsocket: undefined,
-          limit: 20,
-          viewers: 0,
-          producer: undefined,
-          audioProducer: undefined,
-          consumers: new Map(),
-          router: selectRouter(),
-          hidden: false
-        }
+        return socket.emit("room_404")
       }
 
       // check if room full
@@ -252,11 +244,6 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
       if (isHost != true) {
         socket.roomid = roomid;
         return viewerHandler(socket, rooms[roomid].router, rooms)
-      }
-
-      if (isHost == true) {
-        socket.roomid = roomid
-        return hostHandler(socket, rooms, rooms[roomid].router, io)
       }
     })
   })
