@@ -36,11 +36,33 @@ const { hostHandler } = require("./socketHandlers/hostHandler");
 // Start the server initialization
 createWorkersAndRouters().then(async ({ routers, workers }) => {
   let nextRouter = 0;
+  const rooms = {};
 
   const selectRouter = () => {
-    const router = routers[nextRouter];
-    nextRouter = (nextRouter + 1) % routers.length;
-    return router;
+    const routerLoads = routers.map((router, index) => ({
+      router,
+      index,
+      load: 0
+    }));
+    const loadsByRouter = new Map(
+      routerLoads.map((routerLoad) => [routerLoad.router, routerLoad])
+    );
+
+    for (const room of Object.values(rooms)) {
+      const routerLoad = loadsByRouter.get(room.router);
+      if (routerLoad) {
+        routerLoad.load += room.viewers + (room.hostsocket ? 1 : 0);
+      }
+    }
+
+    const minimumLoad = Math.min(...routerLoads.map(({ load }) => load));
+    const selectedRouter = routerLoads.find(({ index, load }) =>
+      load === minimumLoad &&
+      index >= nextRouter
+    ) ?? routerLoads.find(({ load }) => load === minimumLoad);
+
+    nextRouter = (selectedRouter.index + 1) % routers.length;
+    return selectedRouter.router;
   };
 
   // get worker process stats
@@ -177,8 +199,6 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
     });
   }, 5000);
 
-
-  const rooms = {}
 
   const getVisibleRoomList = () => Object.entries(rooms)
     .filter(([, room]) => room.hidden !== true)

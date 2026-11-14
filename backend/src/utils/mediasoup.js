@@ -155,7 +155,7 @@ const createWorkersAndRouters = async () => {
 
   for (let i = 0; i < workercount; i++) {
     console.log("Creating worker/router: ", i)
-    let { worker, router } = await createWorkerAndRouter();
+    const { worker, router } = await createWorkerAndRouter();
     workers.push(worker);
     routers.push(router);
   }
