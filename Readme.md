@@ -20,6 +20,7 @@ A lightweight screen sharing web application written in TypeScript/JavaScript us
 * `HTTP_PORT=9000` – Port for the HTTP server.
 * `RTC_MIN_PORT=40000` – Optional: minimum UDP port for RTC (default: 40000).
 * `RTC_MAX_PORT=40500` – Optional: maximum UDP port for RTC (default: 40500).
+* `WORKERS=1` - Optional: number of mediasoup workers (cpu cores used basically).
 
 ## Setup Notes
 
@@ -45,6 +46,7 @@ services:
       - HTTP_PORT=9000
       - RTC_MIN_PORT=40000
       - RTC_MAX_PORT=40500
+      - WORKERS=1
 ```
 
 ## Example Docker Compose with IPVLAN
@@ -69,6 +71,7 @@ services:
       - HTTP_PORT=8888
       - RTC_MIN_PORT=40000
       - RTC_MAX_PORT=40500
+      - WORKERS=1
 
 networks:
   vlan_net:

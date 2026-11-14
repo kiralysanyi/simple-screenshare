@@ -17,6 +17,7 @@ services:
       - HTTP_PORT=8888 # port of the http server
       - RTC_MIN_PORT=40000 #optional RTC min udp port default: 40000
       - RTC_MAX_PORT=40500 #optional RTC max udp port default: 40500
+      - WORKERS=1
 
 networks:
   vlan_net:
