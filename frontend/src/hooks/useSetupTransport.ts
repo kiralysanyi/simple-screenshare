@@ -131,6 +131,12 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
+              rtcpFeedback: [
+                { type: 'nack' },
+                { type: 'nack', parameter: 'pli' },
+                { type: 'ccm', parameter: 'fir' },
+                { type: 'transport-cc' },
+              ],
             },
           };
           break;
@@ -146,6 +152,12 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
+              rtcpFeedback: [
+                { type: 'nack' },
+                { type: 'nack', parameter: 'pli' },
+                { type: 'ccm', parameter: 'fir' },
+                { type: 'transport-cc' },
+              ],
             },
             encodings: simulcastEncodings,
           };
@@ -219,6 +231,12 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
+              rtcpFeedback: [
+                { type: 'nack' },
+                { type: 'nack', parameter: 'pli' },
+                { type: 'ccm', parameter: 'fir' },
+                { type: 'transport-cc' },
+              ],
             }
           };
           break;

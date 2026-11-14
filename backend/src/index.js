@@ -47,8 +47,13 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
   const previousWorkerUsage = workers.map(() => undefined);
   const previousWorkerTimestamp = workers.map(() => undefined);
   let usageStats;
+  const hasStatViewers = () => io.sockets.adapter.rooms.get("statviewers")?.size > 0;
 
   const collectWorkerStats = async () => {
+    if (!hasStatViewers()) {
+      return;
+    }
+
     const nowTimestamp = Date.now();
     const workerStats = await Promise.all(workers.map(async (worker, index) => {
       const usage = await worker.getResourceUsage();
@@ -98,6 +103,10 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
   const previousConsumerBytes = new Map();
 
   const collectNetworkStats = async () => {
+    if (!hasStatViewers()) {
+      return;
+    }
+
     let totalIn = 0;
     let totalOut = 0;
     const activeProducerIds = new Set();
