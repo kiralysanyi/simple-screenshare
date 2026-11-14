@@ -1,12 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import socket from "../Socket";
 import { Device } from "mediasoup-client";
-import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
+import type { AppData, MediaKind, RtpCapabilities, RtpParameters, Transport, TransportOptions } from "mediasoup-client/types";
 
 interface useViewStreamParams {
     roomID: string | undefined,
     onConsumerTransportReady?: (transport: Transport) => void
 }
+
+type ConsumeResponse = {
+    error?: string;
+    id?: string;
+    producerId?: string;
+    kind?: MediaKind;
+    rtpParameters?: RtpParameters;
+};
 
 const useViewStream = ({ roomID, onConsumerTransportReady }: useViewStreamParams) => {
 
@@ -109,11 +117,11 @@ const useViewStream = ({ roomID, onConsumerTransportReady }: useViewStreamParams
                     }
                 })
 
-                const consumeCallback = async (data: { error: any; id: any; producerId: any; kind: any; rtpParameters: any; }) => {
+                const consumeCallback = async (data: ConsumeResponse) => {
                     console.log("Attach consumer: ", data)
 
-                    if (data.error) {
-                        console.error(data.error)
+                    if (data.error || !data.id || !data.producerId || !data.kind || !data.rtpParameters) {
+                        console.error(data.error ?? "Invalid consumer response")
                         console.log("no producer yet");
                         setStatus("loading");
                         setStatusMessage("Waiting for stream")
@@ -196,7 +204,9 @@ const useViewStream = ({ roomID, onConsumerTransportReady }: useViewStreamParams
             setStatus("loading");
             setStatusMessage("Connecting");
             console.log("Ready to view", rtpCapabilities)
-            rtpCapabilities ? await startConsuming(rtpCapabilities) : null;
+            if (rtpCapabilities) {
+                await startConsuming(rtpCapabilities);
+            }
         }
 
         const onRoomFull = () => {
@@ -239,7 +249,6 @@ const useViewStream = ({ roomID, onConsumerTransportReady }: useViewStreamParams
             socket.off("connect", onConnected);
             socket.off("disconnect", onDisconnected);
             socket.off("hostleft", onHostLeft);
-            socket.off("ready2view", startConsuming);
             socket.emit("leaveroom");
             socket.off("ready2view", onReady2View)
             socket.off("roomname", onRoomName);
@@ -247,7 +256,7 @@ const useViewStream = ({ roomID, onConsumerTransportReady }: useViewStreamParams
             socket.off("room_404", onRoom404);
             consumerTransport?.removeAllListeners();
         }
-    }, [])
+    }, [onConsumerTransportReady, roomID])
 
     return {
         roomFull,

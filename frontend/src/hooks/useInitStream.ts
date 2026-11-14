@@ -11,7 +11,7 @@ interface initStreamHookProps {
 }
 
 const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHookProps) => {
-    const [isConnected, setIsConnected] = useState(false);
+    const [isConnected, setIsConnected] = useState(socket.connected);
     const [viewers, setViewers] = useState(0);
     const [roomName, setRoomName] = useState("");
     const [showModal, setShowModal] = useState(false);
@@ -25,18 +25,13 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
 
     const [finishedInit, setFinishedInit] = useState(false)
 
-    const saveStream = () => {
+    const saveStream = useCallback(() => {
         // save this stream in history
 
-        let history = localStorage.getItem("streaminghistory");
-        let parsedHistory: null | Record<string, room> = null;
-        if (history == null || history == "") {
-            parsedHistory = {}
-        } else {
-            parsedHistory = JSON.parse(history)
-        }
+        const history = localStorage.getItem("streaminghistory");
+        const parsedHistory: Record<string, room> = history ? JSON.parse(history) : {};
 
-        if (roomID && parsedHistory) {
+        if (roomID) {
             parsedHistory[roomID] = {
                 id: roomID,
                 roomname: roomName,
@@ -49,18 +44,17 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
 
             localStorage.setItem("streaminghistory", JSON.stringify(parsedHistory))
         }
-
-    }
+    }, [hostname, roomID, roomName, viewerLimit])
 
     // load data from history if possible
     const loadData = useCallback(() => {
         console.log("Loading saved data")
-        let history = localStorage.getItem("streaminghistory");
-        if (history == null || history == "") {
+        const history = localStorage.getItem("streaminghistory");
+        if (!history) {
             return;
         }
 
-        let parsedHistory: Record<string, room> = JSON.parse(history);
+        const parsedHistory: Record<string, room> = JSON.parse(history);
 
         if (roomID && parsedHistory[roomID]) {
             const roomData = parsedHistory[roomID];
@@ -72,16 +66,18 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
             setViewerLimit(roomData.limit);
         }
 
-    }, [])
+    }, [roomID])
 
     useEffect(() => {
         if (!finishedInit) {
             return
         }
         saveStream();
-    }, [hostname, roomName, viewerLimit, finishedInit])
+    }, [finishedInit, saveStream])
 
     useEffect(() => {
+        const transport = producerTransportRef.current;
+
         let joined = false;
 
         const onConnected = () => {
@@ -199,13 +195,11 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
         socket.on("connect", onConnected);
         socket.on("disconnect", onDisconnected);
         socket.on("routerRtpCapabilities", onRouterRtpCapabilities);
-        setIsConnected(socket.connected);
-
         console.log("Sending initial joinroom")
         socket.emit("joinroom", roomID, true);
         return () => {
             console.log("Cleaning up")
-            producerTransportRef.current?.close();
+            transport?.close();
             socket.emit("leaveroom");
             socket.off("connect", onConnected);
             socket.off("disconnect", onDisconnected);
@@ -217,7 +211,7 @@ const useInitStream = ({ roomID, producerTransportRef, deviceRef }: initStreamHo
             socket.off("limit_changed", onLimitchanged)
             socket.off("listvisibility", onListVisibility)
         }
-    }, [])
+    }, [deviceRef, loadData, producerTransportRef, roomID])
 
     return {
         isConnected,

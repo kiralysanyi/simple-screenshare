@@ -25,16 +25,10 @@ const captureScreen = async (framerate: number = 15, width?: number, height?: nu
 let stream: MediaStream | undefined;
 
 const getStream = async (framerate: number): Promise<MediaStream> => {
-    try {
-        if (stream == undefined || stream?.active == false) {
-            stream = await captureScreen(framerate);
-            return stream;
-        } else {
-            return stream;
-        }
-    } catch (error) {
-        throw error;
+    if (stream == undefined || stream.active == false) {
+        stream = await captureScreen(framerate);
     }
+    return stream;
 }
 
 export default getStream;

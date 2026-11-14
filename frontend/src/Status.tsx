@@ -19,8 +19,8 @@ const StatusPage = () => {
         document.title = "Screenshare stats"
 
         const onStats = (data: stats) => {
-            let tOut = data.netstat.outKbps > 1000 ? (data.netstat.outKbps / 1000).toFixed(2) + "Mbps" : data.netstat.outKbps + "Kbps"
-            let tIn = data.netstat.inKbps > 1000 ? (data.netstat.inKbps / 1000).toFixed(2) + "Mbps" : data.netstat.inKbps + "Kbps"
+            const tOut = data.netstat.outKbps > 1000 ? (data.netstat.outKbps / 1000).toFixed(2) + "Mbps" : data.netstat.outKbps + "Kbps"
+            const tIn = data.netstat.inKbps > 1000 ? (data.netstat.inKbps / 1000).toFixed(2) + "Mbps" : data.netstat.inKbps + "Kbps"
 
             setInbound(tIn)
             setOutbound(tOut)
@@ -66,7 +66,7 @@ const StatusPage = () => {
         <section className="status-rooms">
         <h2>Current streams</h2>
         <div className="streamList">
-            {roomlist ? roomlist.map(room => <div onClick={() => { navigate(`/view/${room.id}`) }} className="streamListItem">
+            {roomlist ? roomlist.map(room => <div key={room.id} onClick={() => { navigate(`/view/${room.id}`) }} className="streamListItem">
                 <h2>{room.roomname}</h2>
                 <span>Streamed by: <span>{room.hostname ? room.hostname : "Unknown"}</span></span>
                 <span>Viewers: {room.viewers}/{room.limit}</span>

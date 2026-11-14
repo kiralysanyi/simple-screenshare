@@ -17,8 +17,16 @@ const Stream = () => {
     const [producerTransport, setProducerTransport] = useState<Transport>();
     const roomID = useParams()["id"];
     const [previewStream, setPreviewStream] = useState<MediaStream>()
-    const [framerate, setFramerate] = useState(15)
-    const [codec, setCodec] = useState("VP9")
+    const [framerate, setFramerate] = useState(() => {
+        const savedFramerate = localStorage.getItem("framerate");
+        return savedFramerate ? parseInt(savedFramerate) : 15;
+    })
+    const [codec, setCodec] = useState(() => {
+        const savedCodec = localStorage.getItem("codec");
+        return savedCodec === "H264" || savedCodec === "VP8" || savedCodec === "VP9" || savedCodec === "AV1"
+            ? savedCodec
+            : "VP9";
+    })
     const [rtcConnectionState, setRtcConnectionState] = useState("disconnected");
     const streamingRef = useRef(false);
     const [streamStarted, setStreamStarted] = useState(false);
@@ -77,14 +85,8 @@ const Stream = () => {
         }
     }
 
-    const [newRoomName, setNewRoomName] = useState(roomName);
-    const [newHostName, setNewHostname] = useState("");
-
-    // sync roomname,hostname to input
-    useEffect(() => {
-        setNewRoomName(roomName)
-        setNewHostname(hostname)
-    }, [roomName, hostname])
+    const [newRoomName, setNewRoomName] = useState<string>();
+    const [newHostName, setNewHostname] = useState<string>();
 
     const [linkGreen, setLinkGreen] = useState(false);
 
@@ -96,23 +98,6 @@ const Stream = () => {
         localStorage.setItem("viewerLimit", newLimit.toString())
         socket.emit("setlimit", newLimit);
     }
-
-    //load saved config
-
-    useEffect(() => {
-        const savedFramerate = localStorage.getItem("framerate");
-        let savedCodec = localStorage.getItem("codec");
-
-        console.log("Loading: ", savedFramerate, savedCodec)
-
-        if (savedCodec != "H264" && savedCodec != "VP8" && savedCodec != "VP9" && savedCodec != "AV1") {
-            console.log("Invalid codec in config: ", savedCodec)
-            savedCodec = "VP9"
-        }
-
-        savedFramerate ? setFramerate(parseInt(savedFramerate)) : null;
-        savedCodec ? setCodec(savedCodec) : null;
-    }, [])
 
     const [hosterror, setHostError] = useState(false)
 
@@ -206,18 +191,19 @@ const Stream = () => {
                 <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newName">New name for room</label>
-                    <input type="text" placeholder="name" value={newRoomName} onChange={(ev) => { setNewRoomName(ev.target.value) }} />
+                    <input type="text" placeholder="name" value={newRoomName ?? roomName} onChange={(ev) => { setNewRoomName(ev.target.value) }} />
                     <button onClick={() => {
-                        socket.emit("setname", newRoomName)
+                        socket.emit("setname", newRoomName ?? roomName)
                     }}>Change</button>
                 </div>
                 <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="newName">Host's name</label>
-                    <input type="text" placeholder="hostname" value={newHostName} onChange={(ev) => { setNewHostname(ev.target.value) }} />
+                    <input type="text" placeholder="hostname" value={newHostName ?? hostname} onChange={(ev) => { setNewHostname(ev.target.value) }} />
                     <button onClick={() => {
-                        setHostname(newHostName)
-                        socket.emit("hostname", newHostName)
+                        const nextHostname = newHostName ?? hostname;
+                        setHostname(nextHostname)
+                        socket.emit("hostname", nextHostname)
                     }}>Change</button>
                 </div>
                 <div className="separator"></div>

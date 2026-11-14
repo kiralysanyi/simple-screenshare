@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import socket from "../Socket";
 import getStream from "../utils/getStream";
 import type { AppData, ProducerOptions, Transport, TransportOptions } from "mediasoup-client/types";
@@ -27,6 +27,7 @@ export const useSetupTransport = ({
   streamingRef,
   onTransportReady,
 }: UseSetupTransportProps) => {
+  const setupTransportRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   const setupTransport = useCallback(async () => {
     const device = deviceRef.current;
@@ -59,7 +60,7 @@ export const useSetupTransport = ({
     }
 
     socket.emit("createProducerTransport", {}, async (params: TransportOptions<AppData>) => {
-      let producerTransport = device.createSendTransport(params);
+      const producerTransport = device.createSendTransport(params);
       producerTransportRef.current = producerTransport;
       onTransportReady?.(producerTransport);
 
@@ -87,9 +88,9 @@ export const useSetupTransport = ({
               console.log("Retrying");
               setRtcConnectionState("Restoring connection");
               socket.emit("resetStream");
-              setupTransport();
               producerTransport.removeAllListeners();
               clearInterval(retryInterval);
+              void setupTransportRef.current?.();
             }
           }, 1000);
         }
@@ -263,6 +264,10 @@ export const useSetupTransport = ({
 
     });
   }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef, onTransportReady]);
+
+  useEffect(() => {
+    setupTransportRef.current = setupTransport;
+  }, [setupTransport]);
 
   return setupTransport;
 };

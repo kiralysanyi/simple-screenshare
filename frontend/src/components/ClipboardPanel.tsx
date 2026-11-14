@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import socket from "../Socket";
 import type { DataConsumer, DataProducer, SctpStreamParameters, Transport } from "mediasoup-client/types";
 
@@ -30,10 +30,10 @@ const ClipboardPanel = ({ isHost, transport, visible = true }: ClipboardPanelPro
     const currentTextRef = useRef<string | undefined>(undefined);
     const currentFileRef = useRef<File | undefined>(undefined);
     const incomingFileRef = useRef<IncomingFile | undefined>(undefined);
-    const sendFileRef = useRef<((file: File) => Promise<void>) | undefined>(undefined);
 
     function handleMessage(message: ArrayBuffer | string) {
         if (typeof message !== "string") {
+            // File chunks follow a file-start message and are reassembled in order.
             const incoming = incomingFileRef.current;
             if (!incoming) return;
             incoming.chunks.push(message);
@@ -113,6 +113,7 @@ const ClipboardPanel = ({ isHost, transport, visible = true }: ClipboardPanelPro
             });
         };
 
+        // The producer announcement can arrive before the consumer transport callback.
         const onProducer = (producer: { id: string }) => {
             clipboardProducerIdRef.current = producer.id;
             consumeProducer(producer.id);
@@ -129,18 +130,18 @@ const ClipboardPanel = ({ isHost, transport, visible = true }: ClipboardPanelPro
         };
     }, [isHost, transport]);
 
-    const send = (message: string | ArrayBuffer) => {
+    const send = useCallback((message: string | ArrayBuffer) => {
         if (dataProducerRef.current?.readyState === "open") {
             dataProducerRef.current.send(message);
         }
-    };
+    }, []);
 
-    const sendText = () => {
+    const sendText = useCallback(() => {
         currentTextRef.current = text;
         send(JSON.stringify({ type: "text", text }));
-    };
+    }, [send, text]);
 
-    const sendFile = async (selectedFile: File) => {
+    const sendFile = useCallback(async (selectedFile: File) => {
         if (selectedFile.size > MAX_FILE_SIZE) {
             setStatus("Files must be 100 MB or smaller");
             return;
@@ -160,10 +161,7 @@ const ClipboardPanel = ({ isHost, transport, visible = true }: ClipboardPanelPro
         }
         send(JSON.stringify({ type: "file-end" }));
         setStatus("File shared");
-    };
-    useEffect(() => {
-        sendFileRef.current = sendFile;
-    }, [sendFile]);
+    }, [send]);
 
     useEffect(() => {
         return () => {
@@ -175,13 +173,13 @@ const ClipboardPanel = ({ isHost, transport, visible = true }: ClipboardPanelPro
         if (!isHost) return;
         const resend = () => {
             if (currentTextRef.current !== undefined) send(JSON.stringify({ type: "text", text: currentTextRef.current }));
-            if (currentFileRef.current) void sendFileRef.current?.(currentFileRef.current);
+            if (currentFileRef.current) void sendFile(currentFileRef.current);
         };
         socket.on("clipboardViewerReady", resend);
         return () => {
             socket.off("clipboardViewerReady", resend);
         };
-    }, [isHost]);
+    }, [isHost, send, sendFile]);
 
     return (
         <section className={`clipboardPanel ${!isHost && !visible ? "hidden" : ""}`}>
