@@ -30,7 +30,8 @@ async function createWebRtcTransport(router) {
       id: transport.id,
       iceParameters: transport.iceParameters,
       iceCandidates: transport.iceCandidates,
-      dtlsParameters: transport.dtlsParameters
+      dtlsParameters: transport.dtlsParameters,
+      sctpParameters: transport.sctpParameters
     }
   };
 }

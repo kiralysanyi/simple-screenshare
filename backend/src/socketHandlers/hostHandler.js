@@ -18,8 +18,10 @@ const hostHandler = (socket, rooms, io, selectRouter = () => { }) => {
         if (room) {
             room["producer"]?.close();
             room["audioProducer"]?.close();
+            room["dataProducer"]?.close();
             room["producer"] = undefined;
             room["audioProducer"] = undefined;
+            room["dataProducer"] = undefined;
         }
 
         videoTransport?.close();
@@ -57,6 +59,7 @@ const hostHandler = (socket, rooms, io, selectRouter = () => { }) => {
                 viewers: 0,
                 producer: undefined,
                 audioProducer: undefined,
+                dataProducer: undefined,
                 consumers: new Map(),
                 router: selectRouter(),
                 hidden: false
@@ -229,10 +232,37 @@ const hostHandler = (socket, rooms, io, selectRouter = () => { }) => {
         }
     }
 
+    const onProduceData = async ({ sctpStreamParameters, label, protocol }, cb) => {
+        if (!videoTransport || !rooms[roomid]) {
+            cb({ error: "stream transport is not available" });
+            return;
+        }
+
+        try {
+            rooms[roomid].dataProducer?.close();
+            rooms[roomid].dataProducer = await videoTransport.produceData({
+                sctpStreamParameters,
+                label,
+                protocol,
+                ordered: true
+            });
+            cb({ id: rooms[roomid].dataProducer.id });
+            io.to(roomid).emit("clipboardProducer", {
+                id: rooms[roomid].dataProducer.id,
+                label: rooms[roomid].dataProducer.label,
+                protocol: rooms[roomid].dataProducer.protocol
+            });
+        } catch (error) {
+            console.error("Failed to create clipboard data producer:", error);
+            cb({ error: "failed to create clipboard data producer" });
+        }
+    };
+
     // ===========================
     socket.on("createProducerTransport", onCreateProducerTransport);
     socket.on("connectProducerTransport", onConnectProducerTransport);
     socket.on("produce", onProduce);
+    socket.on("produceData", onProduceData);
 
     //handle hostname change (here hostname means the person's name who streams)
 
@@ -248,6 +278,7 @@ const hostHandler = (socket, rooms, io, selectRouter = () => { }) => {
         socket.off("createProducerTransport", onCreateProducerTransport);
         socket.off("connectProducerTransport", onConnectProducerTransport);
         socket.off("produce", onProduce);
+        socket.off("produceData", onProduceData);
         socket.off("hostname", onHostnameChange)
     })
 

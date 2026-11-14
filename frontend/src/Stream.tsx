@@ -7,12 +7,14 @@ import StreamViewer from "./StreamViewer";
 import { useSetupTransport } from "./hooks/useSetupTransport";
 import "./css/streamer.css"
 import useInitStream from "./hooks/useInitStream";
+import ClipboardPanel from "./components/ClipboardPanel";
 
 
 const Stream = () => {
     //transport setup start
     const deviceRef = useRef<Device | null>(null);
     const producerTransportRef = useRef<Transport | null>(null);
+    const [producerTransport, setProducerTransport] = useState<Transport>();
     const roomID = useParams()["id"];
     const [previewStream, setPreviewStream] = useState<MediaStream>()
     const [framerate, setFramerate] = useState(15)
@@ -29,6 +31,7 @@ const Stream = () => {
         setRtcConnectionState,
         setStreamStarted,
         streamingRef,
+        onTransportReady: setProducerTransport,
     });
 
     //transport setup end
@@ -53,12 +56,14 @@ const Stream = () => {
     const resetStream = async () => {
         socket.emit("resetStream");
 
+        setProducerTransport(undefined);
         producerTransportRef.current?.close();
         await setupTransport();
     }
 
     const stopStreaming = () => {
         socket.emit("resetStream");
+        setProducerTransport(undefined);
         producerTransportRef.current?.close();
         setStreamStarted(false);
         streamingRef.current = false;
@@ -178,6 +183,8 @@ const Stream = () => {
                         }}
                     />
                 </div>
+                <div className="separator"></div>
+                <ClipboardPanel isHost transport={producerTransport} />
                 <div className="separator"></div>
                 <div className="form-group">
                     <label htmlFor="fps">Framerate</label>

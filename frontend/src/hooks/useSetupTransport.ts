@@ -13,6 +13,7 @@ interface UseSetupTransportProps {
   setRtcConnectionState: (state: string) => void;
   setStreamStarted: (started: boolean) => void;
   streamingRef: React.RefObject<boolean>;
+  onTransportReady?: (transport: Transport) => void;
 }
 
 export const useSetupTransport = ({
@@ -24,6 +25,7 @@ export const useSetupTransport = ({
   setRtcConnectionState,
   setStreamStarted,
   streamingRef,
+  onTransportReady,
 }: UseSetupTransportProps) => {
 
   const setupTransport = useCallback(async () => {
@@ -59,6 +61,7 @@ export const useSetupTransport = ({
     socket.emit("createProducerTransport", {}, async (params: TransportOptions<AppData>) => {
       let producerTransport = device.createSendTransport(params);
       producerTransportRef.current = producerTransport;
+      onTransportReady?.(producerTransport);
 
       producerTransport.on("connect", ({ dtlsParameters }, cb) => {
         socket.emit("connectProducerTransport", { dtlsParameters }, cb);
@@ -66,6 +69,10 @@ export const useSetupTransport = ({
 
       producerTransport.on("produce", ({ kind, rtpParameters }, cb) => {
         socket.emit("produce", { kind, rtpParameters }, cb);
+      });
+
+      producerTransport.on("producedata", ({ sctpStreamParameters, label, protocol }, cb) => {
+        socket.emit("produceData", { sctpStreamParameters, label, protocol }, cb);
       });
 
       producerTransport.on("connectionstatechange", (state) => {
@@ -255,7 +262,7 @@ export const useSetupTransport = ({
       socket.emit("ready2view");
 
     });
-  }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef]);
+  }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef, onTransportReady]);
 
   return setupTransport;
 };

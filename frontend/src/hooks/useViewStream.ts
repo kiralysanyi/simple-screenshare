@@ -4,10 +4,11 @@ import { Device } from "mediasoup-client";
 import type { AppData, RtpCapabilities, Transport, TransportOptions } from "mediasoup-client/types";
 
 interface useViewStreamParams {
-    roomID: string | undefined
+    roomID: string | undefined,
+    onConsumerTransportReady?: (transport: Transport) => void
 }
 
-const useViewStream = ({ roomID }: useViewStreamParams) => {
+const useViewStream = ({ roomID, onConsumerTransportReady }: useViewStreamParams) => {
 
     if (!roomID) {
         throw new Error("No roomid provided")
@@ -67,6 +68,7 @@ const useViewStream = ({ roomID }: useViewStreamParams) => {
             socket.emit("createConsumerTransport", {}, (params: TransportOptions<AppData>) => {
                 console.log("Creating transport")
                 consumerTransport = device.createRecvTransport(params);
+                onConsumerTransportReady?.(consumerTransport);
 
                 consumerTransport.on("connect", ({ dtlsParameters }, cb) => {
                     socket.emit("connectConsumerTransport", { dtlsParameters }, cb);
