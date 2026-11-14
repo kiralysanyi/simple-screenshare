@@ -10,7 +10,9 @@ const StatusIndicator = ({ status, message }: { status: "ok" | "loading" | "erro
                 setCollapsed(true)
             }, 5000);
         } else {
-            setCollapsed(false)
+            timeout = setTimeout(() => {
+                setCollapsed(false)
+            }, 0);
         }
 
         return () => {

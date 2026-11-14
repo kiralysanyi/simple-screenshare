@@ -30,7 +30,8 @@ async function createWebRtcTransport(router) {
       id: transport.id,
       iceParameters: transport.iceParameters,
       iceCandidates: transport.iceCandidates,
-      dtlsParameters: transport.dtlsParameters
+      dtlsParameters: transport.dtlsParameters,
+      sctpParameters: transport.sctpParameters
     }
   };
 }
@@ -58,7 +59,13 @@ const createWorkerAndRouter = async () => {
       clockRate: 90000,
       parameters: {
         'x-google-start-bitrate': 1000
-      }
+      },
+      rtcpFeedback: [
+        { type: 'nack' },
+        { type: 'nack', parameter: 'pli' },
+        { type: 'ccm', parameter: 'fir' },
+        { type: 'transport-cc' },
+      ],
     },
     {
       kind: 'video',
@@ -66,7 +73,13 @@ const createWorkerAndRouter = async () => {
       clockRate: 90000,
       parameters: {
         'x-google-start-bitrate': 1000,
-      }
+      },
+      rtcpFeedback: [
+        { type: 'nack' },
+        { type: 'nack', parameter: 'pli' },
+        { type: 'ccm', parameter: 'fir' },
+        { type: 'transport-cc' },
+      ],
     },
     {
       kind: 'video',
@@ -138,16 +151,16 @@ const createWorkersAndRouters = async () => {
   const workers = []
   const routers = []
 
-  const workercount = parseInt(process.env.WORKERS);
+  const workercount = parseInt(process.env.WORKERS ? process.env.WORKERS : 1);
 
   for (let i = 0; i < workercount; i++) {
     console.log("Creating worker/router: ", i)
-    let {worker, router} = await createWorkerAndRouter();
+    const { worker, router } = await createWorkerAndRouter();
     workers.push(worker);
     routers.push(router);
   }
 
-  return {workers, routers}
+  return { workers, routers }
 };
 
 module.exports = { createWebRtcTransport, createWorkersAndRouters }

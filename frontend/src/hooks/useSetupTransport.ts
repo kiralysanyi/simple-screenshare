@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import socket from "../Socket";
 import getStream from "../utils/getStream";
 import type { AppData, ProducerOptions, Transport, TransportOptions } from "mediasoup-client/types";
@@ -13,6 +13,7 @@ interface UseSetupTransportProps {
   setRtcConnectionState: (state: string) => void;
   setStreamStarted: (started: boolean) => void;
   streamingRef: React.RefObject<boolean>;
+  onTransportReady?: (transport: Transport) => void;
 }
 
 export const useSetupTransport = ({
@@ -24,7 +25,9 @@ export const useSetupTransport = ({
   setRtcConnectionState,
   setStreamStarted,
   streamingRef,
+  onTransportReady,
 }: UseSetupTransportProps) => {
+  const setupTransportRef = useRef<(() => Promise<void>) | undefined>(undefined);
 
   const setupTransport = useCallback(async () => {
     const device = deviceRef.current;
@@ -57,8 +60,9 @@ export const useSetupTransport = ({
     }
 
     socket.emit("createProducerTransport", {}, async (params: TransportOptions<AppData>) => {
-      let producerTransport = device.createSendTransport(params);
+      const producerTransport = device.createSendTransport(params);
       producerTransportRef.current = producerTransport;
+      onTransportReady?.(producerTransport);
 
       producerTransport.on("connect", ({ dtlsParameters }, cb) => {
         socket.emit("connectProducerTransport", { dtlsParameters }, cb);
@@ -66,6 +70,10 @@ export const useSetupTransport = ({
 
       producerTransport.on("produce", ({ kind, rtpParameters }, cb) => {
         socket.emit("produce", { kind, rtpParameters }, cb);
+      });
+
+      producerTransport.on("producedata", ({ sctpStreamParameters, label, protocol }, cb) => {
+        socket.emit("produceData", { sctpStreamParameters, label, protocol }, cb);
       });
 
       producerTransport.on("connectionstatechange", (state) => {
@@ -80,9 +88,9 @@ export const useSetupTransport = ({
               console.log("Retrying");
               setRtcConnectionState("Restoring connection");
               socket.emit("resetStream");
-              setupTransport();
               producerTransport.removeAllListeners();
               clearInterval(retryInterval);
+              void setupTransportRef.current?.();
             }
           }, 1000);
         }
@@ -123,6 +131,12 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
+              rtcpFeedback: [
+                { type: 'nack' },
+                { type: 'nack', parameter: 'pli' },
+                { type: 'ccm', parameter: 'fir' },
+                { type: 'transport-cc' },
+              ],
             },
           };
           break;
@@ -138,6 +152,12 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
+              rtcpFeedback: [
+                { type: 'nack' },
+                { type: 'nack', parameter: 'pli' },
+                { type: 'ccm', parameter: 'fir' },
+                { type: 'transport-cc' },
+              ],
             },
             encodings: simulcastEncodings,
           };
@@ -211,6 +231,12 @@ export const useSetupTransport = ({
               parameters: {
                 'x-google-start-bitrate': 1000,
               },
+              rtcpFeedback: [
+                { type: 'nack' },
+                { type: 'nack', parameter: 'pli' },
+                { type: 'ccm', parameter: 'fir' },
+                { type: 'transport-cc' },
+              ],
             }
           };
           break;
@@ -255,7 +281,11 @@ export const useSetupTransport = ({
       socket.emit("ready2view");
 
     });
-  }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef]);
+  }, [framerate, codec, deviceRef, producerTransportRef, setPreviewStream, setRtcConnectionState, setStreamStarted, streamingRef, onTransportReady]);
+
+  useEffect(() => {
+    setupTransportRef.current = setupTransport;
+  }, [setupTransport]);
 
   return setupTransport;
 };

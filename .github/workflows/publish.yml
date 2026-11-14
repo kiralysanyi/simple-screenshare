@@ -3,7 +3,7 @@ name: Publish Docker image (latest)
 on:
   push:
     branches:
-      - main
+      - main   # or your default branch
 
 jobs:
   build-and-push:

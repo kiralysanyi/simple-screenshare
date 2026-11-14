@@ -8,7 +8,7 @@ import Header from './components/Header'
 function App() {
 
   const [rooms, setRooms] = useState<Array<room>>([])
-  const Navigate = useNavigate();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onRoomList = (roomlist: Array<room>) => {
@@ -33,8 +33,8 @@ function App() {
       <div className='streams'>
         <h2>Available streams</h2>
         <div className='streamList'>
-          {rooms.map(room => <div className='streamListItem' onClick={() => {
-            Navigate("/view/" + room.id)
+          {rooms.map(room => <div key={room.id} className='streamListItem' onClick={() => {
+            navigate("/view/" + room.id)
           }}>
             <h2>{room.roomname}</h2>
             <span>Streamed by: <span>{room.hostname? room.hostname : "Unknown"}</span></span>
@@ -42,7 +42,7 @@ function App() {
           </div>)}
         </div>
         <br />
-        <button onClick={() => {Navigate("/selector")}}>Start stream</button>
+        <button onClick={() => {navigate("/selector")}}>Start stream</button>
       </div>
 
 

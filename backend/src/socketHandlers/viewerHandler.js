@@ -138,15 +138,46 @@ const viewerHandler = (socket, router, rooms) => {
 
     }
 
+    const onConsumeData = async ({ dataProducerId }, cb) => {
+        const dataProducer = rooms[roomid]?.dataProducer;
+        const transport = rooms[roomid]?.consumers.get(socket.id);
+
+        if (!dataProducer || dataProducer.id !== dataProducerId) {
+            cb({ error: "clipboard is not available" });
+            return;
+        }
+        if (!transport) {
+            cb({ error: "consumer transport is not available" });
+            return;
+        }
+
+        try {
+            const dataConsumer = await transport.consumeData({ dataProducerId });
+            cb({
+                id: dataConsumer.id,
+                dataProducerId: dataConsumer.dataProducerId,
+                sctpStreamParameters: dataConsumer.sctpStreamParameters,
+                label: dataConsumer.label,
+                protocol: dataConsumer.protocol
+            });
+            rooms[roomid].hostsocket?.emit("clipboardViewerReady");
+        } catch (error) {
+            console.error("Failed to create clipboard data consumer:", error);
+            cb({ error: "failed to create clipboard data consumer" });
+        }
+    };
+
 
     socket.on("createConsumerTransport", onCreateConsumerTransport);
     socket.on("connectConsumerTransport", onConnectConsumerTransport);
     socket.on("consume", onConsume);
+    socket.on("consumeData", onConsumeData);
 
     socket.once("leaveroom", () => {
         socket.off("createConsumerTransport", onCreateConsumerTransport);
         socket.off("connectConsumerTransport", onConnectConsumerTransport);
         socket.off("consume", onConsume);
+        socket.off("consumeData", onConsumeData);
         socket.leave(roomid)
     })
 
@@ -154,6 +185,13 @@ const viewerHandler = (socket, router, rooms) => {
     socket.emit("roomname", rooms[roomid]["roomname"])
 
     socket.emit("ready2view")
+    if (rooms[roomid].dataProducer) {
+        socket.emit("clipboardProducer", {
+            id: rooms[roomid].dataProducer.id,
+            label: rooms[roomid].dataProducer.label,
+            protocol: rooms[roomid].dataProducer.protocol
+        });
+    }
 }
 
 module.exports = { viewerHandler }

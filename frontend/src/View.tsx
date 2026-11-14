@@ -7,6 +7,8 @@ import { ArrowsPointingInIcon, ArrowsPointingOutIcon, InformationCircleIcon, Spe
 import useViewStream from "./hooks/useViewStream";
 import useWakeLock from "./hooks/useWakeLock";
 import useFullscreen from "./hooks/useFullscreen";
+import ClipboardPanel from "./components/ClipboardPanel";
+import type { Transport } from "mediasoup-client/types";
 
 
 const View = () => {
@@ -14,6 +16,7 @@ const View = () => {
     const roomID = useParams()["id"];
     const [showStats, setShowStats] = useState(false);
     const [muted, setMuted] = useState(true);
+    const [consumerTransport, setConsumerTransport] = useState<Transport>();
 
     const {
         roomFull,
@@ -25,7 +28,7 @@ const View = () => {
         roomname,
         audioStream,
         noRoom
-    } = useViewStream({ roomID });
+    } = useViewStream({ roomID, onConsumerTransportReady: setConsumerTransport });
 
     // handle fullscreen
     const { isFullscreen, toggleFullscreen } = useFullscreen();
@@ -84,6 +87,7 @@ const View = () => {
             </div>
         </div>
         <StatusIndicator message={statusMessage} status={status} />
+        <ClipboardPanel transport={consumerTransport} isHost={false} visible={showControls} />
         {showStats ? <div className="statsDisplay">
             {rtpStats.map((stat) => <span>{stat}</span>)}
         </div> : ""}

@@ -36,19 +36,46 @@ const { hostHandler } = require("./socketHandlers/hostHandler");
 // Start the server initialization
 createWorkersAndRouters().then(async ({ routers, workers }) => {
   let nextRouter = 0;
+  const rooms = {};
 
   const selectRouter = () => {
-    const router = routers[nextRouter];
-    nextRouter = (nextRouter + 1) % routers.length;
-    return router;
+    const routerLoads = routers.map((router, index) => ({
+      router,
+      index,
+      load: 0
+    }));
+    const loadsByRouter = new Map(
+      routerLoads.map((routerLoad) => [routerLoad.router, routerLoad])
+    );
+
+    for (const room of Object.values(rooms)) {
+      const routerLoad = loadsByRouter.get(room.router);
+      if (routerLoad) {
+        routerLoad.load += room.viewers + (room.hostsocket ? 1 : 0);
+      }
+    }
+
+    const minimumLoad = Math.min(...routerLoads.map(({ load }) => load));
+    const selectedRouter = routerLoads.find(({ index, load }) =>
+      load === minimumLoad &&
+      index >= nextRouter
+    ) ?? routerLoads.find(({ load }) => load === minimumLoad);
+
+    nextRouter = (selectedRouter.index + 1) % routers.length;
+    return selectedRouter.router;
   };
 
   // get worker process stats
   const previousWorkerUsage = workers.map(() => undefined);
   const previousWorkerTimestamp = workers.map(() => undefined);
   let usageStats;
+  const hasStatViewers = () => io.sockets.adapter.rooms.get("statviewers")?.size > 0;
 
   const collectWorkerStats = async () => {
+    if (!hasStatViewers()) {
+      return;
+    }
+
     const nowTimestamp = Date.now();
     const workerStats = await Promise.all(workers.map(async (worker, index) => {
       const usage = await worker.getResourceUsage();
@@ -98,6 +125,10 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
   const previousConsumerBytes = new Map();
 
   const collectNetworkStats = async () => {
+    if (!hasStatViewers()) {
+      return;
+    }
+
     let totalIn = 0;
     let totalOut = 0;
     const activeProducerIds = new Set();
@@ -168,8 +199,6 @@ createWorkersAndRouters().then(async ({ routers, workers }) => {
     });
   }, 5000);
 
-
-  const rooms = {}
 
   const getVisibleRoomList = () => Object.entries(rooms)
     .filter(([, room]) => room.hidden !== true)

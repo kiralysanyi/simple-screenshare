@@ -1,29 +1,27 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Header from "./components/Header";
 import createRandomString from "./utils/createRandomString";
 import type { room } from "./interfaces/room";
 import { Link, useNavigate } from "react-router";
 
 const StreamSelector = () => {
-    const [streamHistory, setStreamHistory] = useState<Record<string, room>>();
+    const [streamHistory, setStreamHistory] = useState<Record<string, room>>(() => {
+        const savedHistory = localStorage.getItem("streaminghistory");
+        if (savedHistory == null) {
+            return {};
+        }
+
+        try {
+            return JSON.parse(savedHistory) as Record<string, room>;
+        } catch (error) {
+            console.error("failed to load stream history: ", error);
+            return {};
+        }
+    });
 
     const [streamId, setStreamId] = useState(createRandomString(10))
 
-    const Navigate = useNavigate();
-
-    useEffect(() => {
-        // load streaming history
-
-        const savedHistory = localStorage.getItem("streaminghistory");
-
-        if (savedHistory != null) {
-            try {
-                setStreamHistory(JSON.parse(savedHistory))
-            } catch (error) {
-                console.error("failed to load stream history: ", error)
-            }
-        }
-    }, [])
+    const navigate = useNavigate();
 
     const clearHistory = () => {
         localStorage.setItem("streaminghistory", "{}")
@@ -56,7 +54,7 @@ const StreamSelector = () => {
             <h2>Streaming history</h2>
             <button onClick={clearHistory}>Clear History</button>
             <div className='streamList'>
-                {Object.keys(streamHistory).map(room => <div onClick={() => { Navigate(`/stream/${streamHistory[room].id}`) }} className='streamListItem'>
+                {Object.keys(streamHistory).map(room => <div key={room} onClick={() => { navigate(`/stream/${streamHistory[room].id}`) }} className='streamListItem'>
                     <h2>{streamHistory[room].roomname}</h2>
                     <span>ID: <b>{streamHistory[room].id}</b></span>
                     <span>Host's name: <b>{streamHistory[room].hostname}</b></span>
