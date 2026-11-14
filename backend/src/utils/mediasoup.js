@@ -151,16 +151,16 @@ const createWorkersAndRouters = async () => {
   const workers = []
   const routers = []
 
-  const workercount = parseInt(process.env.WORKERS);
+  const workercount = parseInt(process.env.WORKERS ? process.env.WORKERS : 1);
 
   for (let i = 0; i < workercount; i++) {
     console.log("Creating worker/router: ", i)
-    let {worker, router} = await createWorkerAndRouter();
+    let { worker, router } = await createWorkerAndRouter();
     workers.push(worker);
     routers.push(router);
   }
 
-  return {workers, routers}
+  return { workers, routers }
 };
 
 module.exports = { createWebRtcTransport, createWorkersAndRouters }
